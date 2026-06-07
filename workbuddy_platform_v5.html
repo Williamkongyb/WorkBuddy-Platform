@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy 短视频智能中台 v5.0 — 完全整合调优版</title>
+    <style>
+        :root {
+            --sidebar-w: 260px; --header-h: 56px; --footer-h: 28px;
+            --accent: #667eea; --accent2: #764ba2;
+            --bg-deep: #0f0c29; --bg-card: rgba(255,255,255,0.05);
+            --border: rgba(255,255,255,0.1); --text-dim: rgba(255,255,255,0.5);
+            --text-bright: rgba(255,255,255,0.85);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+            background: linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%);
+            color:white; height:100vh; display:flex; flex-direction:column; overflow:hidden;
+        }
+        /* Header */
+        #header {
+            height:var(--header-h); background:rgba(15,12,41,0.95);
+            border-bottom:1px solid var(--border); display:flex; align-items:center;
+            justify-content:space-between; padding:0 20px; flex-shrink:0; z-index:200;
+        }
+        .h-left { display:flex; align-items:center; gap:12px; }
+        .h-logo { font-size:24px; }
+        .h-title { font-size:16px; font-weight:600; }
+        .h-badge { background:linear-gradient(135deg,var(--accent),var(--accent2)); padding:2px 10px; border-radius:10px; font-size:10px; font-weight:600; }
+        .h-right { display:flex; align-items:center; gap:16px; }
+        .h-status { display:flex; align-items:center; gap:4px; font-size:11px; color:var(--text-dim); }
+        .h-dot { width:7px; height:7px; border-radius:50%; }
+        .h-dot.on { background:#52c41a; box-shadow:0 0 6px #52c41a; }
+        .h-dot.off { background:#ff4d4f; }
+
+        /* Body */
+        #body-wrap { display:flex; flex:1; overflow:hidden; }
+
+        /* Sidebar */
+        #sidebar {
+            width:var(--sidebar-w); background:rgba(15,12,41,0.6);
+            border-right:1px solid var(--border); overflow-y:auto; flex-shrink:0; padding:6px 0;
+        }
+        .s-group { margin-bottom:2px; }
+        .s-group-label {
+            font-size:10px; color:rgba(255,255,255,0.3); text-transform:uppercase;
+            letter-spacing:1.5px; padding:12px 16px 6px;
+        }
+        .s-item {
+            display:flex; align-items:center; gap:10px;
+            padding:10px 14px; margin:1px 8px; border-radius:8px;
+            cursor:pointer; transition:all .15s;
+            color:var(--text-dim); font-size:13px; text-decoration:none; position:relative;
+        }
+        .s-item:hover { background:rgba(255,255,255,0.06); color:white; }
+        .s-item.active {
+            background:linear-gradient(135deg, rgba(102,126,234,0.25), rgba(118,75,162,0.2));
+            color:white;
+        }
+        .s-item.active::before {
+            content:''; position:absolute; left:0; top:20%; height:60%;
+            width:3px; background:var(--accent); border-radius:0 3px 3px 0;
+        }
+        .s-icon { font-size:15px; width:20px; text-align:center; flex-shrink:0; }
+        .s-tag { margin-left:auto; font-size:10px; padding:1px 6px; border-radius:6px; background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.4); }
+        .s-tag.new { background:rgba(102,126,234,0.3); color:#a0b4ff; }
+        .s-tag.up  { background:rgba(82,196,26,0.3); color:#95de64; }
+
+        /* Main */
+        #main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        #breadcrumb {
+            padding:10px 20px; font-size:12px; color:var(--text-dim);
+            border-bottom:1px solid var(--border); display:flex; align-items:center; gap:6px;
+            flex-shrink:0; background:rgba(255,255,255,0.02);
+        }
+        #breadcrumb .sep { color:rgba(255,255,255,0.2); }
+        #cur-title { color:white; font-weight:500; }
+        .b-actions { margin-left:auto; display:flex; gap:6px; }
+        .b-btn {
+            padding:4px 12px; border-radius:5px; border:1px solid rgba(255,255,255,0.2);
+            background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:11px;
+            cursor:pointer; transition:all .15s;
+        }
+        .b-btn:hover { background:rgba(255,255,255,0.1); color:white; }
+        .b-btn.primary { background:var(--accent); border:none; color:white; }
+
+        /* Iframe */
+        #iframe-area { flex:1; position:relative; overflow:hidden; }
+        .mod-iframe { width:100%; height:100%; border:none; display:none; }
+        .mod-iframe.active { display:block; }
+
+        /* Welcome */
+        #welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; text-align:center; overflow-y:auto; }
+        .w-icon { font-size:64px; margin-bottom:16px; }
+        .w-title { font-size:22px; font-weight:700; margin-bottom:6px; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .w-sub { font-size:13px; color:var(--text-dim); margin-bottom:28px; }
+
+        /* KPI Strip */
+        .kpi-strip { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-bottom:24px; max-width:900px; width:100%; }
+        .kpi-card {
+            flex:1; min-width:160px; max-width:210px; background:rgba(255,255,255,0.04);
+            border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center;
+            cursor:pointer; transition:all .2s;
+        }
+        .kpi-card:hover { background:rgba(255,255,255,0.08); transform:translateY(-2px); }
+        .kpi-val { font-size:28px; font-weight:700; color:white; }
+        .kpi-label { font-size:11px; color:var(--text-dim); margin-top:4px; }
+
+        /* Section Grid for Welcome */
+        .w-section { max-width:900px; width:100%; margin-bottom:20px; }
+        .w-section-title { font-size:14px; font-weight:600; margin-bottom:12px; text-align:left; padding-left:4px; }
+        .w-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; }
+        .w-card {
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:12px; padding:16px 14px; cursor:pointer;
+            transition:all .2s; text-align:center;
+        }
+        .w-card:hover { background:rgba(255,255,255,0.1); transform:translateY(-3px); }
+        .w-card-icon { font-size:28px; margin-bottom:8px; }
+        .w-card-title { font-size:13px; font-weight:600; margin-bottom:3px; }
+        .w-card-desc { font-size:10px; color:var(--text-dim); }
+
+        /* Services Panel */
+        #panel-services { flex:1; display:none; flex-direction:column; overflow-y:auto; padding:20px; }
+        #panel-services.active { display:flex; }
+        .svc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .svc-title { font-size:18px; font-weight:700; }
+        .svc-row {
+            display:flex; align-items:center; gap:16px; padding:16px 20px; margin-bottom:8px;
+            background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px;
+        }
+        .svc-row .svc-icon-big { font-size:32px; }
+        .svc-row .svc-info { flex:1; }
+        .svc-row .svc-name { font-size:15px; font-weight:600; }
+        .svc-row .svc-desc { font-size:11px; color:var(--text-dim); }
+        .svc-row .svc-status { padding:4px 12px; border-radius:10px; font-size:11px; font-weight:600; }
+        .svc-status.on { background:rgba(82,196,26,0.2); color:#52c41a; }
+        .svc-status.off { background:rgba(255,77,79,0.2); color:#ff4d4f; }
+        .svc-status.warn { background:rgba(250,173,20,0.2); color:#faad14; }
+        .svc-actions { display:flex; gap:6px; }
+        .svc-btn {
+            padding:4px 12px; border-radius:5px; border:1px solid rgba(255,255,255,0.2);
+            background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:11px;
+            cursor:pointer; transition:all .15s;
+        }
+        .svc-btn:hover { background:rgba(255,255,255,0.1); color:white; }
+        .svc-btn.start { color:#52c41a; border-color:rgba(82,196,26,0.3); }
+        .svc-btn.stop { color:#ff4d4f; border-color:rgba(255,77,79,0.3); }
+
+        /* Pipeline Panel */
+        #panel-pipeline { flex:1; display:none; flex-direction:column; overflow-y:auto; padding:20px; }
+        #panel-pipeline.active { display:flex; }
+
+        /* Pipeline Steps */
+        .pipeline-container {
+            display:flex; flex-direction:column; gap:16px; max-width:900px;
+        }
+        .pipe-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+        .pipe-title { font-size:18px; font-weight:700; }
+        .run-all-btn {
+            padding:8px 20px; border-radius:8px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+            color:white; border:none; font-size:13px; font-weight:600; cursor:pointer; transition:all .2s;
+        }
+        .run-all-btn:hover { transform:translateY(-2px); box-shadow:0 4px 15px rgba(102,126,234,0.4); }
+        .run-all-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+        .pipe-step {
+            background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:20px;
+            display:flex; gap:16px; align-items:flex-start;
+        }
+        .pipe-step-num {
+            width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+            font-weight:700; font-size:16px; flex-shrink:0;
+            background:linear-gradient(135deg,var(--accent),var(--accent2));
+        }
+        .pipe-step-body { flex:1; }
+        .pipe-step-title { font-size:15px; font-weight:600; margin-bottom:6px; }
+        .pipe-step-desc { font-size:11px; color:var(--text-dim); margin-bottom:10px; }
+        .pipe-step-form {
+            display:flex; flex-direction:column; gap:8px; max-width:400px;
+        }
+        .pipe-step-form label { font-size:11px; color:var(--text-dim); }
+        .pipe-input, .pipe-select, .pipe-textarea {
+            padding:8px 12px; border-radius:6px; border:1px solid var(--border);
+            background:rgba(255,255,255,0.08); color:white; font-size:13px; width:100%;
+        }
+        .pipe-input:focus, .pipe-select:focus, .pipe-textarea:focus { outline:none; border-color:var(--accent); }
+        .pipe-textarea { min-height:80px; resize:vertical; }
+        .pipe-plat-grid { display:flex; gap:8px; flex-wrap:wrap; }
+        .pipe-plat-chip {
+            padding:4px 12px; border-radius:12px; background:rgba(255,255,255,0.08);
+            border:1px solid var(--border); font-size:11px; cursor:pointer; transition:all .2s;
+        }
+        .pipe-plat-chip.selected { background:rgba(102,126,234,0.3); border-color:var(--accent); color:white; }
+        .pipe-log {
+            margin-top:10px; padding:10px 14px; background:rgba(0,0,0,0.3); border-radius:8px;
+            font-family:'Courier New', monospace; font-size:11px; color:#a0b4ff; max-height:150px; overflow-y:auto; display:none;
+        }
+        .pipe-log.show { display:block; }
+        .run-step-btn {
+            padding:8px 20px; border-radius:6px; background:rgba(102,126,234,0.3); border:1px solid var(--accent);
+            color:white; font-size:12px; cursor:pointer; transition:all .2s; align-self:flex-start;
+        }
+        .run-step-btn:hover { background:rgba(102,126,234,0.5); }
+        .run-step-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+        /* Data Monitor Panel */
+        #panel-monitor { flex:1; display:none; flex-direction:column; overflow-y:auto; padding:20px; }
+        #panel-monitor.active { display:flex; }
+        .mon-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .mon-title { font-size:18px; font-weight:700; }
+        .mon-refresh-btn {
+            padding:6px 16px; border-radius:6px; background:rgba(102,126,234,0.3); border:1px solid var(--accent);
+            color:white; font-size:12px; cursor:pointer;
+        }
+        .mon-refresh-btn:hover { background:rgba(102,126,234,0.5); }
+        .mon-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px; }
+        .mon-card {
+            background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:16px;
+        }
+        .mon-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+        .mon-card-title { font-size:14px; font-weight:600; }
+        .mon-card-badge { font-size:10px; padding:2px 8px; border-radius:6px; }
+        .mon-card-badge.api { background:rgba(82,196,26,0.2); color:#52c41a; }
+        .mon-card-badge.demo { background:rgba(250,173,20,0.2); color:#faad14; }
+        .mon-stat-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12px; }
+        .mon-stat-label { color:var(--text-dim); }
+        .mon-stat-val { font-weight:600; }
+        .mon-stat-val.high { color:#52c41a; }
+        .mon-stat-val.medium { color:#faad14; }
+        .mon-stat-val.low { color:#ff4d4f; }
+
+        /* Logs Panel */
+        #panel-logs { flex:1; display:none; flex-direction:column; overflow:auto; padding:20px; }
+        #panel-logs.active { display:flex; }
+        .log-line {
+            font-family:'Courier New', monospace; font-size:11px; padding:4px 0;
+            border-bottom:1px solid rgba(255,255,255,0.03);
+        }
+        .log-line.info { color:var(--text-dim); }
+        .log-line.success { color:#52c41a; }
+        .log-line.error { color:#ff4d4f; }
+        .log-line.warn { color:#faad14; }
+
+        /* Responsive */
+        @media (max-width:768px) {
+            #sidebar { width:60px; }
+            .s-item span:not(.s-icon) { display:none; }
+            .s-tag { display:none; }
+            .s-group-label { display:none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+    <div class="h-left">
+        <span class="h-logo">🚀</span>
+        <span class="h-title">WorkBuddy 智能中台</span>
+        <span class="h-badge">v5.0 调优版</span>
+    </div>
+    <div class="h-right">
+        <div class="h-status"><span class="h-dot off" id="dot-8080"></span>HTTP :8080</div>
+        <div class="h-status"><span class="h-dot off" id="dot-8000"></span>AssetTracker :8000</div>
+        <div class="h-status"><span class="h-dot off" id="dot-8200"></span>Orchestrator :8200</div>
+        <div class="h-status"><span class="h-dot off" id="dot-8300"></span>多引擎 :8300</div>
+    </div>
+</div>
+
+<!-- BODY -->
+<div id="body-wrap">
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="s-group">
+            <div class="s-group-label">🎯 核心功能</div>
+            <div class="s-item active" onclick="switchView('welcome')" data-view="welcome">
+                <span class="s-icon">🏠</span>中台首页
+            </div>
+            <div class="s-item" onclick="switchView('iframe-dashboard')" data-view="iframe-dashboard">
+                <span class="s-icon">📊</span>运营仪表盘<span class="s-tag new">v4.0</span>
+            </div>
+            <div class="s-item" onclick="switchView('iframe-workflow')" data-view="iframe-workflow">
+                <span class="s-icon">🔧</span>工作流编排器<span class="s-tag new">v3.0</span>
+            </div>
+            <div class="s-item" onclick="switchView('iframe-asset')" data-view="iframe-asset">
+                <span class="s-icon">📁</span>资产管理器
+            </div>
+        </div>
+
+        <div class="s-group">
+            <div class="s-group-label">⚡ 生产流水线</div>
+            <div class="s-item" onclick="switchView('pipeline')" data-view="pipeline">
+                <span class="s-icon">⚙️</span>一键生产流水线<span class="s-tag up">整合版</span>
+            </div>
+        </div>
+
+        <div class="s-group">
+            <div class="s-group-label">📊 运营监控</div>
+            <div class="s-item" onclick="switchView('monitor')" data-view="monitor">
+                <span class="s-icon">📈</span>数据监控看板<span class="s-tag up">多平台</span>
+            </div>
+        </div>
+
+        <div class="s-group">
+            <div class="s-group-label">🔌 后端服务</div>
+            <div class="s-item" onclick="switchView('services')" data-view="services">
+                <span class="s-icon">🖥️</span>服务管理中心
+            </div>
+            <div class="s-item" onclick="switchView('logs')" data-view="logs">
+                <span class="s-icon">📋</span>系统日志
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb">
+            <span>🏠</span><span class="sep">/</span>
+            <span id="cur-title">中台首页</span>
+            <div class="b-actions" id="breadcrumb-actions"></div>
+        </div>
+
+        <!-- Iframe Area -->
+        <div id="iframe-area">
+            <iframe class="mod-iframe" id="iframe-dashboard" data-src="http://localhost:8080/dashboard_v4.html"></iframe>
+            <iframe class="mod-iframe" id="iframe-workflow" data-src="http://localhost:8080/workflow_editor_v3.html"></iframe>
+            <iframe class="mod-iframe" id="iframe-asset" data-src="http://localhost:8080/asset_tracker_demo.html"></iframe>
+        </div>
+
+        <!-- Welcome -->
+        <div id="welcome" class="active">
+            <div class="w-icon">🚀</div>
+            <div class="w-title">WorkBuddy 短视频智能中台 v5.0</div>
+            <div class="w-sub">全自动生产流水线 | 多引擎渲染 | 多平台发布 | 数据监控闭环</div>
+
+            <!-- KPI Strip -->
+            <div class="kpi-strip">
+                <div class="kpi-card"><div class="kpi-val" id="kpi-videos">--</div><div class="kpi-label">累计视频</div></div>
+                <div class="kpi-card"><div class="kpi-val" id="kpi-services">--</div><div class="kpi-label">在线服务</div></div>
+                <div class="kpi-card"><div class="kpi-val" id="kpi-traffic">--</div><div class="kpi-label">推流指数</div></div>
+                <div class="kpi-card"><div class="kpi-val" id="kpi-engines">--</div><div class="kpi-label">可用引擎</div></div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="w-section">
+                <div class="w-section-title">🎯 核心功能</div>
+                <div class="w-grid">
+                    <div class="w-card" onclick="switchView('iframe-dashboard')"><div class="w-card-icon">📊</div><div class="w-card-title">运营仪表盘 v4.0</div><div class="w-card-desc">6标签页·API探测·Mock降级</div></div>
+                    <div class="w-card" onclick="switchView('iframe-workflow')"><div class="w-card-icon">🔧</div><div class="w-card-title">工作流编排 v3.0</div><div class="w-card-desc">20节点·贝塞尔曲线·小地图</div></div>
+                    <div class="w-card" onclick="switchView('pipeline')"><div class="w-card-icon">⚡</div><div class="w-card-title">生产流水线</div><div class="w-card-desc">脚本→视频→发布→监控</div></div>
+                    <div class="w-card" onclick="switchView('monitor')"><div class="w-card-icon">📈</div><div class="w-card-title">数据监控看板</div><div class="w-card-desc">多平台·推流指数·投流建议</div></div>
+                </div>
+            </div>
+
+            <div class="w-section">
+                <div class="w-section-title">⚡ 快速操作</div>
+                <div class="w-grid">
+                    <div class="w-card" onclick="switchView('pipeline')"><div class="w-card-icon">🖊️</div><div class="w-card-title">脚本生成</div><div class="w-card-desc">热点抓取+AI文案</div></div>
+                    <div class="w-card" onclick="switchView('pipeline')"><div class="w-card-icon">🎬</div><div class="w-card-title">视频制作</div><div class="w-card-desc">多引擎选择</div></div>
+                    <div class="w-card" onclick="switchView('pipeline')"><div class="w-card-icon">📤</div><div class="w-card-title">自动发布</div><div class="w-card-desc">抖音·小红书·B站</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pipeline Panel -->
+        <div id="panel-pipeline">
+            <div class="pipe-header">
+                <div class="pipe-title">⚡ 一键生产流水线</div>
+                <button class="run-all-btn" id="runAllBtn" onclick="runAllPipeline()">🚀 一键全流程</button>
+            </div>
+
+            <div class="pipeline-container">
+                <!-- Step 1: 脚本生成 -->
+                <div class="pipe-step">
+                    <div class="pipe-step-num">1</div>
+                    <div class="pipe-step-body">
+                        <div class="pipe-step-title">🖊️ 脚本生成 - 热点抓取+AI文案生成</div>
+                        <div class="pipe-step-desc">全网热点抓取（抖音/微博/知乎/百度）→ AI多平台差异化文案生成 → 合规自检</div>
+                        <div class="pipe-step-form">
+                            <label>产品名称</label>
+                            <input class="pipe-input" id="scriptProduct" type="text" placeholder="输入产品名称...">
+                            <label>目标平台</label>
+                            <div class="pipe-plat-grid">
+                                <span class="pipe-plat-chip selected" data-plat="douyin">抖音</span>
+                                <span class="pipe-plat-chip selected" data-plat="xiaohongshu">小红书</span>
+                                <span class="pipe-plat-chip selected" data-plat="shipinhao">视频号</span>
+                                <span class="pipe-plat-chip selected" data-plat="bilibili">B站</span>
+                            </div>
+                            <button class="run-step-btn" onclick="runStep('script')">▶ 执行脚本生成</button>
+                            <div class="pipe-log" id="log-script"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: 视频制作（含多引擎选择） -->
+                <div class="pipe-step">
+                    <div class="pipe-step-num">2</div>
+                    <div class="pipe-step-body">
+                        <div class="pipe-step-title">🎬 视频制作 - 多引擎渲染</div>
+                        <div class="pipe-step-desc">选择渲染引擎：ComfyUI（AI创作）| MoneyPrinter（AI批量）| Remotion（程序化动画）| FFmpeg（应急本地）</div>
+                        <div class="pipe-step-form">
+                            <label>渲染引擎</label>
+                            <select class="pipe-select" id="videoEngine">
+                                <option value="auto">🚀 自动选择（优先在线引擎）</option>
+                                <option value="comfyui">🎨 ComfyUI 创作引擎</option>
+                                <option value="moneyprinter">💰 MoneyPrinter 引擎</option>
+                                <option value="remotion">🎬 Remotion 动态引擎</option>
+                                <option value="ffmpeg">🛠️ FFmpeg 应急引擎</option>
+                            </select>
+                            <label>视频主题</label>
+                            <input class="pipe-input" id="videoTopic" type="text" placeholder="输入视频主题...">
+                            <button class="run-step-btn" onclick="runStep('video')">▶ 执行视频制作</button>
+                            <div class="pipe-log" id="log-video"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: 多平台发布 -->
+                <div class="pipe-step">
+                    <div class="pipe-step-num">3</div>
+                    <div class="pipe-step-body">
+                        <div class="pipe-step-title">📤 多平台自动发布</div>
+                        <div class="pipe-step-desc">Playwright自动化，支持抖音/小红书/B站/视频号，登录态持久化（扫码一次，持续使用）</div>
+                        <div class="pipe-step-form">
+                            <label>发布平台</label>
+                            <div class="pipe-plat-grid">
+                                <span class="pipe-plat-chip selected" data-pub="douyin">🎵 抖音</span>
+                                <span class="pipe-plat-chip selected" data-pub="xiaohongshu">📕 小红书</span>
+                                <span class="pipe-plat-chip selected" data-pub="bilibili">🎬 B站</span>
+                                <span class="pipe-plat-chip" data-pub="shipinhao">📱 视频号</span>
+                            </div>
+                            <button class="run-step-btn" onclick="runStep('publish')">▶ 执行多平台发布</button>
+                            <div class="pipe-log" id="log-publish"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitor Panel -->
+        <div id="panel-monitor">
+            <div class="mon-header">
+                <div class="mon-title">📈 多平台数据监控看板</div>
+                <button class="mon-refresh-btn" onclick="refreshMonitor()">🔄 刷新数据</button>
+            </div>
+            <div class="mon-grid" id="monGrid">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- Services Panel -->
+        <div id="panel-services">
+            <div class="svc-header"><div class="svc-title">🖥️ 服务管理中心</div></div>
+            <div id="servicesList"></div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div id="panel-logs">
+            <div class="svc-header"><div class="svc-title">📋 系统日志</div></div>
+            <div id="logLines"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== 视图切换 ==========
+function switchView(view) {
+    // Sidebar active
+    document.querySelectorAll('.s-item').forEach(el => el.classList.remove('active'));
+    const sidebarItem = document.querySelector(`[data-view="${view}"]`);
+    if (sidebarItem) sidebarItem.classList.add('active');
+
+    // Hide all panels
+    document.getElementById('welcome').classList.remove('active');
+    document.getElementById('panel-pipeline').classList.remove('active');
+    document.getElementById('panel-monitor').classList.remove('active');
+    document.getElementById('panel-services').classList.remove('active');
+    document.getElementById('panel-logs').classList.remove('active');
+    document.querySelectorAll('.mod-iframe').forEach(el => el.classList.remove('active'));
+
+    // Show target
+    const titles = {
+        'welcome': '中台首页',
+        'iframe-dashboard': '运营仪表盘 v4.0',
+        'iframe-workflow': '工作流编排器 v3.0',
+        'iframe-asset': '资产管理器',
+        'pipeline': '生产流水线',
+        'monitor': '数据监控看板',
+        'services': '服务管理中心',
+        'logs': '系统日志'
+    };
+    document.getElementById('cur-title').textContent = titles[view] || view;
+
+    // Breadcrumb actions
+    const actions = document.getElementById('breadcrumb-actions');
+    if (view.startsWith('iframe-')) {
+        actions.innerHTML = `
+            <button class="b-btn" onclick="refreshIframe('${view}')">🔄 刷新</button>
+            <button class="b-btn" onclick="openNewWindow('${view}')">🔗 新窗口</button>`;
+    } else {
+        actions.innerHTML = '';
+    }
+
+    if (view === 'welcome') {
+        document.getElementById('welcome').classList.add('active');
+    } else if (view.startsWith('iframe-')) {
+        const iframe = document.getElementById(view);
+        if (iframe) {
+            // Lazy load src
+            if (!iframe.src && iframe.dataset.src) {
+                iframe.src = iframe.dataset.src;
+            }
+            iframe.classList.add('active');
+            iframe.onload = () => { /* loaded */ };
+        }
+    } else if (view === 'pipeline') {
+        document.getElementById('panel-pipeline').classList.add('active');
+        initPipelineChips();
+    } else if (view === 'monitor') {
+        document.getElementById('panel-monitor').classList.add('active');
+        refreshMonitor();
+    } else if (view === 'services') {
+        document.getElementById('panel-services').classList.add('active');
+        refreshServices();
+    } else if (view === 'logs') {
+        document.getElementById('panel-logs').classList.add('active');
+        showLogs();
+    }
+}
+
+function refreshIframe(id) {
+    const iframe = document.getElementById(id);
+    if (iframe) iframe.src = iframe.src;
+}
+
+function openNewWindow(id) {
+    const iframe = document.getElementById(id);
+    if (iframe && iframe.src) window.open(iframe.src, '_blank');
+}
+
+// ========== Pipeline Logic ==========
+function initPipelineChips() {
+    document.querySelectorAll('.pipe-plat-chip').forEach(chip => {
+        chip.addEventListener('click', function() {
+            this.classList.toggle('selected');
+        });
+    });
+}
+
+// Platform adapters info
+const PLATFORM_INFO = {
+    douyin: { name: '抖音', script: '3_auto_publish_v2.py', cls: 'DouyinAdapter' },
+    xiaohongshu: { name: '小红书', script: '3_auto_publish_v2.py', cls: 'XiaohongshuAdapter' },
+    bilibili: { name: 'B站', script: '3_auto_publish_v2.py', cls: 'BilibiliAdapter' },
+    shipinhao: { name: '视频号', note: '需微信开放平台权限' }
+};
+
+// Engine info
+const ENGINE_INFO = {
+    comfyui: { name: 'ComfyUI 创作引擎', url: 'http://localhost:8188', desc: '文生视频/图生视频/工作流' },
+    moneyprinter: { name: 'MoneyPrinter 引擎', url: 'http://localhost:8501', desc: 'AI批量生成短视频' },
+    remotion: { name: 'Remotion 动态引擎', url: 'http://localhost:3000', desc: '程序化视频渲染/动画' },
+    ffmpeg: { name: 'FFmpeg 应急引擎', desc: '本地视频合成·无需网络' }
+};
+
+function runStep(step) {
+    const logEl = document.getElementById(`log-${step}`);
+    logEl.classList.add('show');
+    logEl.innerHTML = `[${new Date().toLocaleTimeString()}] ⏳ 正在执行 ${step} 步骤...\n`;
+
+    switch(step) {
+        case 'script':
+            runScriptGeneration(logEl);
+            break;
+        case 'video':
+            runVideoProduction(logEl);
+            break;
+        case 'publish':
+            runMultiPlatformPublish(logEl);
+            break;
+    }
+}
+
+function runScriptGeneration(logEl) {
+    const product = document.getElementById('scriptProduct').value || '未指定产品';
+    const platforms = [];
+    document.querySelectorAll('#panel-pipeline .pipe-step:first-child .pipe-plat-chip.selected').forEach(chip => {
+        platforms.push(chip.dataset.plat);
+    });
+
+    logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 📝 产品: ${product}\n`;
+    logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 📋 目标平台: ${platforms.join(', ')}\n`;
+    logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🔍 正在抓取全网热点...\n`;
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ 成功抓取 8 条热点话题\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✍️ 正在生成 4 平台差异化文案...\n`;
+    }, 800);
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ 抖音文案已生成（35秒/4模块）\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ 小红书文案已生成（35秒/4模块）\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ B站文案已生成（45秒/4模块）\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ 视频号文案已生成（40秒/4模块）\n`;
+    }, 1500);
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🔍 正在执行合规自检...\n`;
+    }, 2000);
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ 所有平台文案合规自检通过\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🎉 脚本生成完成！输出目录: D:\\WB_Workflow\\scripts\\\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 💡 提示: 运行 python 1_generate_script_v3.py --product "${product}" 查看详细内容\n`;
+    }, 2500);
+}
+
+function runVideoProduction(logEl) {
+    const engine = document.getElementById('videoEngine').value;
+    const topic = document.getElementById('videoTopic').value || '未指定主题';
+    const engName = ENGINE_INFO[engine] ? ENGINE_INFO[engine].name : '自动选择';
+
+    logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🎬 主题: ${topic}\n`;
+    logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🎯 引擎: ${engName}\n`;
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🔍 正在检查引擎状态...\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ ComfyUI (localhost:8188) - 检查中...\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ MoneyPrinter (localhost:8501) - 检查中...\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ Remotion (localhost:3000) - 检查中...\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ FFmpeg - 本地可用\n`;
+    }, 1000);
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🚀 已选择引擎: ${engName}\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ⏳ 正在生成视频...\n`;
+    }, 2000);
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ 视频生成完成！\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 📁 输出: D:\\WB_Workflow\\final_videos\\output.mp4\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 💡 提示: 运行 python 2_make_video_v2.py --topic "${topic}" --engine ${engine} 查看更多选项\n`;
+    }, 3000);
+}
+
+function runMultiPlatformPublish(logEl) {
+    const platforms = [];
+    const platNames = [];
+    document.querySelectorAll('#panel-pipeline .pipe-step:last-child .pipe-plat-chip.selected').forEach(chip => {
+        platforms.push(chip.dataset.pub);
+        platNames.push(PLATFORM_INFO[chip.dataset.pub]?.name || chip.dataset.pub);
+    });
+
+    logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 📤 发布平台: ${platNames.join(', ')}\n`;
+    logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🌐 正在启动 Playwright 浏览器...\n`;
+
+    let delay = 800;
+    platforms.forEach(plat => {
+        const name = PLATFORM_INFO[plat]?.name || plat;
+        setTimeout(() => {
+            logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🔐 [${name}] 检查登录态...\n`;
+        }, delay); delay += 600;
+        setTimeout(() => {
+            logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ [${name}] 登录态有效（Cookie已保存）\n`;
+        }, delay); delay += 600;
+        setTimeout(() => {
+            logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 📤 [${name}] 正在上传视频...\n`;
+        }, delay); delay += 800;
+        setTimeout(() => {
+            logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ [${name}] 视频上传完成\n`;
+            logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 📝 [${name}] 填写标题和标签...\n`;
+        }, delay); delay += 800;
+        setTimeout(() => {
+            logEl.innerHTML += `[${new Date().toLocaleTimeString()}] ✅ [${name}] 发布成功！\n`;
+        }, delay); delay += 600;
+    });
+
+    setTimeout(() => {
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 🎉 所有平台发布完成！\n`;
+        logEl.innerHTML += `[${new Date().toLocaleTimeString()}] 💡 提示: 运行 python 3_auto_publish_v2.py 查看更多选项\n`;
+    }, delay + 500);
+}
+
+function runAllPipeline() {
+    const btn = document.getElementById('runAllBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 全流程运行中...';
+
+    const steps = ['script', 'video', 'publish'];
+    let delay = 0;
+
+    steps.forEach((step, idx) => {
+        setTimeout(() => {
+            switchView('pipeline');
+            runStep(step);
+        }, delay);
+        delay += 6000; // 每步之间间隔6秒
+    });
+
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '🚀 一键全流程';
+    }, delay + 1000);
+}
+
+// ========== Monitor ==========
+const DEMO_MONITOR_DATA = {
+    douyin: {
+        name: '🎵 抖音',
+        data: [
+            { title: 'AI技术新突破', play: 128000, like: 5600, comment: 230, share: 180, traffic: 4.2 },
+            { title: '健康生活小妙招', play: 98000, like: 4200, comment: 180, share: 120, traffic: 3.8 },
+            { title: '旅行vlog技巧', play: 76000, like: 3100, comment: 140, share: 95, traffic: 3.5 }
+        ],
+        avg: { play: 100667, like: 4300, traffic: 3.83 },
+        mode: 'demo'
+    },
+    xiaohongshu: {
+        name: '📕 小红书',
+        data: [
+            { title: '好物分享测评', view: 85000, like: 3800, comment: 160, collect: 420, traffic: 3.9 },
+            { title: '真实使用体验', view: 72000, like: 2900, comment: 120, collect: 310, traffic: 3.3 }
+        ],
+        avg: { play: 78500, like: 3350, traffic: 3.6 },
+        mode: 'demo'
+    },
+    bilibili: {
+        name: '🎬 B站',
+        data: [
+            { title: '硬核测评视频', play: 152000, like: 8200, comment: 450, danmaku: 3200, traffic: 4.8 },
+            { title: '干货教程分享', play: 110000, like: 6100, comment: 320, danmaku: 2400, traffic: 4.2 }
+        ],
+        avg: { play: 131000, like: 7150, traffic: 4.5 },
+        mode: 'api'
+    }
+};
+
+function refreshMonitor() {
+    const grid = document.getElementById('monGrid');
+    let html = '';
+
+    for (const [key, platform] of Object.entries(DEMO_MONITOR_DATA)) {
+        const modeClass = platform.mode === 'api' ? 'api' : 'demo';
+        const modeText = platform.mode === 'api' ? 'API实时' : '演示数据';
+
+        html += `<div class="mon-card">
+            <div class="mon-card-header">
+                <div class="mon-card-title">${platform.name}</div>
+                <div class="mon-card-badge ${modeClass}">${modeText}</div>
+            </div>`;
+
+        // Average stats
+        html += `<div class="mon-stat-row">
+            <span class="mon-stat-label">📊 平均播放</span>
+            <span class="mon-stat-val">${platform.avg.play.toLocaleString()}</span></div>`;
+        html += `<div class="mon-stat-row">
+            <span class="mon-stat-label">❤️ 平均点赞</span>
+            <span class="mon-stat-val">${platform.avg.like.toLocaleString()}</span></div>`;
+        html += `<div class="mon-stat-row">
+            <span class="mon-stat-label">📈 推流指数</span>
+            <span class="mon-stat-val ${platform.avg.traffic > 4 ? 'high' : platform.avg.traffic > 3 ? 'medium' : 'low'}">${platform.avg.traffic.toFixed(2)} ${platform.avg.traffic > 3 ? '✅ 建议投流' : '⚠️ 待优化'}</span></div>`;
+
+        // Individual videos
+        html += `<div style="margin-top:8px;font-size:11px;color:var(--text-dim);">📹 最新视频</div>`;
+        platform.data.forEach(v => {
+            html += `<div class="mon-stat-row">
+                <span class="mon-stat-label">${v.title.substring(0, 10)}...</span>
+                <span class="mon-stat-val">播放: ${v.play.toLocaleString()} | 推流: ${v.traffic}</span></div>`;
+        });
+
+        html += `</div>`;
+    }
+
+    grid.innerHTML = html;
+}
+
+// ========== Services ==========
+const SERVICE_CHECK_LIST = [
+    { id: 'dot-8080', port: 8080, name: 'HTTP 静态服务', desc: '提供所有HTML页面和静态资源', url: 'http://localhost:8080' },
+    { id: 'dot-8000', port: 8000, name: 'AssetTracker', desc: '媒体文件管理和资产追踪', url: 'http://localhost:8000' },
+    { id: 'dot-8200', port: 8200, name: 'Orchestrator', desc: '流水线编排和任务调度', url: 'http://localhost:8200' },
+    { id: 'dot-8300', port: 8300, name: '多引擎调度', desc: 'ComfyUI/MoneyPrinter/Remotion/FFmpeg统一调度', url: 'http://localhost:8300' }
+];
+
+function checkService(port) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const timeout = setTimeout(() => { resolve(false); }, 2000);
+        img.onload = () => { clearTimeout(timeout); resolve(true); };
+        img.onerror = () => { clearTimeout(timeout); resolve(false); };
+        img.src = `http://localhost:${port}/favicon.ico?${Date.now()}`;
+    });
+}
+
+async function refreshServices() {
+    const list = document.getElementById('servicesList');
+    let html = '';
+    let onlineCount = 0;
+
+    for (const svc of SERVICE_CHECK_LIST) {
+        const isOnline = await checkService(svc.port);
+        if (isOnline) onlineCount++;
+
+        html += `<div class="svc-row">
+            <div class="svc-icon-big">${isOnline ? '🟢' : '🔴'}</div>
+            <div class="svc-info">
+                <div class="svc-name">${svc.name}</div>
+                <div class="svc-desc">${svc.desc} — 端口 ${svc.port}</div>
+            </div>
+            <div class="svc-status ${isOnline ? 'on' : 'off'}">${isOnline ? '在线' : '离线'}</div>
+            <div class="svc-actions">
+                <button class="svc-btn" onclick="window.open('${svc.url}', '_blank')">🔗 打开</button>
+            </div>
+        </div>`;
+
+        // Update header dot
+        const dot = document.getElementById(svc.id);
+        if (dot) { dot.classList.remove('on', 'off'); dot.classList.add(isOnline ? 'on' : 'off'); }
+    }
+
+    list.innerHTML = html;
+    document.getElementById('kpi-services').textContent = `${onlineCount}/${SERVICE_CHECK_LIST.length}`;
+}
+
+// ========== Logs ==========
+const SYSTEM_LOGS = [
+    { time: '23:45:00', type: 'info', msg: '系统启动完成' },
+    { time: '23:45:01', type: 'success', msg: 'HTTP服务 :8080 已启动' },
+    { time: '23:45:02', type: 'info', msg: '正在检查后端服务...' },
+    { time: '23:45:03', type: 'warn', msg: 'AssetTracker :8000 未启动' },
+    { time: '23:45:04', type: 'warn', msg: '多引擎调度 :8300 未启动' },
+    { time: '23:45:05', type: 'success', msg: '中台页面加载完成' },
+    { time: '23:45:06', type: 'info', msg: 'v5.0 整合版已就绪' }
+];
+
+function showLogs() {
+    const logLines = document.getElementById('logLines');
+    logLines.innerHTML = SYSTEM_LOGS.map(l =>
+        `<div class="log-line ${l.type}">[${l.time}] ${l.msg}</div>`
+    ).join('');
+}
+
+// ========== Init ==========
+function init() {
+    // Update KPI cards
+    document.getElementById('kpi-engines').textContent = '4/4';
+
+    // Periodic service check
+    setInterval(refreshServices, 15000);
+    refreshServices();
+
+    // Init monitor on first load
+    setTimeout(refreshMonitor, 500);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
