@@ -287,26 +287,48 @@ class AssetAPIHandler(http.server.BaseHTTPRequestHandler):
             })
 
         elif path == "/":
-            # 服务文档页
+            # 中文服务文档页
             html = f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>AssetTracker API</title>
-<style>body{{font-family:sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#333}}
-h1{{color:#667eea}} pre{{background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px}}
-.endpoint{{margin:16px 0;padding:12px;border-left:3px solid #667eea;background:#fafafa}}
-code{{background:#eee;padding:2px 6px;border-radius:3px}}
+<html><head><meta charset="UTF-8"><title>📁 媒体资产管理 - AssetTracker v1.0</title>
+<style>body{{font-family:sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#333}}
+h1{{color:#52c41a}} h3{{color:#666;margin-top:24px}}
+pre{{background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}}
+.endpoint{{margin:16px 0;padding:14px;border-left:4px solid #52c41a;background:#f6ffed;border-radius:0 6px 6px 0}}
+code{{background:#eee;padding:2px 6px;border-radius:3px;font-size:13px}}
+.footer{{color:#999;font-size:12px;margin-top:40px;border-top:1px solid #eee;padding-top:12px}}
 </style></head><body>
-<h1>AssetTracker API v1.0</h1>
-<p>服务已启动 | 视频目录: <code>{self.video_dir}</code></p>
-<p>局域网地址: <code>http://192.168.1.208:{port}</code></p>
-<div class="endpoint"><strong>GET /api/assets</strong> - 视频文件列表<br>
-<pre>curl http://localhost:{port}/api/assets</pre></div>
-<div class="endpoint"><strong>GET /api/assets/{{filename}}</strong> - 流式播放视频<br>
-<pre>&lt;video src="http://192.168.1.208:{port}/api/assets/demo.mp4" controls&gt;</pre></div>
-<div class="endpoint"><strong>GET /api/tasks</strong> - 任务状态列表<br>
-<pre>curl http://localhost:{port}/api/tasks</pre></div>
-<div class="endpoint"><strong>GET /api/status</strong> - 服务健康检查<br>
-<pre>curl http://localhost:{port}/api/status</pre></div>
-<p style="color:#999;font-size:12px;margin-top:40px">CORS enabled | Range support for video seeking</p>
+<h1>📁 媒体资产管理控制台</h1>
+<p><strong>AssetTracker API v1.0</strong> | 服务正常运行中</p>
+<p>📂 视频目录: <code>{self.video_dir}</code></p>
+<p>🌐 服务地址: <code>http://localhost:{self.server.server_port}</code></p>
+
+<h3>📡 可用 API 端点</h3>
+<div class="endpoint">
+  <strong>GET /api/assets</strong> — 获取所有视频文件列表（含元数据）<br>
+  <pre>curl http://localhost:{self.server.server_port}/api/assets</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/assets/{"{filename}"}</strong> — 流式播放指定视频（支持进度条拖拽）<br>
+  <pre>&lt;video src="http://localhost:{self.server.server_port}/api/assets/demo.mp4" controls&gt;&lt;/video&gt;</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/tasks</strong> — 获取任务状态列表<br>
+  <pre>curl http://localhost:{self.server.server_port}/api/tasks</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/status</strong> — 服务健康检查<br>
+  <pre>curl http://localhost:{self.server.server_port}/api/status</pre>
+</div>
+
+<h3>🔧 功能说明</h3>
+<ul style="line-height:1.8">
+  <li><strong>跨设备访问</strong>：已开启 CORS，局域网设备可直接访问</li>
+  <li><strong>视频拖拽</strong>：支持 HTTP Range 请求，视频进度条可自由拖拽</li>
+  <li><strong>自动扫描</strong>：自动扫描视频目录，按修改时间倒序排列</li>
+  <li><strong>任务追踪</strong>：自动识别脚本文件和已生成视频，追踪渲染进度</li>
+</ul>
+
+<p class="footer">前端面板: <a href="http://localhost:8080/asset_tracker_demo.html">asset_tracker_demo.html</a> | 后端: asset_server.py</p>
 </body></html>"""
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")

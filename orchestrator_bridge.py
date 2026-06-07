@@ -109,17 +109,54 @@ class BridgeHandler(http.server.BaseHTTPRequestHandler):
             })
 
         elif path == "/":
-            html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orchestrator Bridge</title>
-<style>body{{font-family:sans-serif;max-width:800px;margin:40px auto;padding:20px;color:#333}}
-h1{{color:#667eea}} pre{{background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px}}
-p{{margin:8px 0}} code{{background:#eee;padding:2px 6px;border-radius:3px}}</style></head><body>
-<h1>Orchestrator Bridge v1.0</h1>
-<p>端口: <code>{port}</code></p>
-<p>API:</p>
-<pre>GET /api/pipeline/summary  - 管道摘要（Dashboard 用）
-GET /api/pipeline/status   - 完整状态
-GET /api/pipeline/history  - 运行历史
-GET /api/config            - 配置</pre></body></html>"""
+            html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>🔗 工作流编排桥接 - Orchestrator Bridge v1.0</title>
+<style>body{{font-family:sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#333}}
+h1{{color:#fa8c16}} h3{{color:#666;margin-top:24px}}
+pre{{background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}}
+.endpoint{{margin:14px 0;padding:14px;border-left:4px solid #fa8c16;background:#fff7e6;border-radius:0 6px 6px 0}}
+code{{background:#eee;padding:2px 6px;border-radius:3px;font-size:13px}}
+.footer{{color:#999;font-size:12px;margin-top:40px;border-top:1px solid #eee;padding-top:12px}}
+</style></head><body>
+<h1>🔗 工作流编排桥接服务</h1>
+<p><strong>Orchestrator Bridge v1.0</strong> | 服务正常运行中</p>
+<p>🌐 服务地址: <code>http://localhost:{port}</code></p>
+<p>📄 状态文件: <code>{STATUS_FILE}</code> <span style="color:{'green' if STATUS_FILE.exists() else 'red'}">({'存在' if STATUS_FILE.exists() else '未找到'})</span></p>
+
+<h3>📡 可用 API 端点</h3>
+<div class="endpoint">
+  <strong>GET /api/pipeline/summary</strong> — 管道运行摘要（Dashboard 仪表盘专用）<br>
+  <pre>curl http://localhost:{port}/api/pipeline/summary</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/pipeline/status</strong> — 完整管道状态（含所有阶段详情）<br>
+  <pre>curl http://localhost:{port}/api/pipeline/status</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/pipeline/history</strong> — 历史运行记录（最近 20 条）<br>
+  <pre>curl http://localhost:{port}/api/pipeline/history</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/config</strong> — 当前配置信息<br>
+  <pre>curl http://localhost:{port}/api/config</pre>
+</div>
+
+<h3>🔧 功能说明</h3>
+<ul style="line-height:1.8">
+  <li><strong>状态桥接</strong>：读取 <code>pipeline_status.json</code>，以 HTTP JSON API 形式暴露给前端</li>
+  <li><strong>历史追踪</strong>：保存每次管道运行的完整记录到 <code>pipeline_history/</code> 目录</li>
+  <li><strong>跨域支持</strong>：已开启 CORS，Dashboard 可直接调用</li>
+  <li><strong>实时同步</strong>：orchestrator.py 运行时会实时更新状态文件，本服务自动读取最新数据</li>
+</ul>
+
+<h3>📊 三阶段管道</h3>
+<ol style="line-height:1.8">
+  <li><strong>① 文案生成</strong>（1_generate_script.py）— 热点抓取 → 合规自检 → 输出脚本</li>
+  <li><strong>② 视频制作</strong>（2_make_video.py）— 剪映数字人 / Seedance API 双引擎</li>
+  <li><strong>③ 自动发布</strong>（3_auto_publish.py）— Playwright RPA 多平台上传</li>
+</ol>
+
+<p class="footer">前端入口: <a href="http://localhost:8080/workbuddy_platform_v4.html">workbuddy_platform_v4.html</a> | 后端: orchestrator_bridge.py</p>
+</body></html>"""
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self._cors()

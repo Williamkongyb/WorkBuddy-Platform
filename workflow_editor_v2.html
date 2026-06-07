@@ -3,399 +3,445 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WorkBuddy - 工作流编排器 v2.1（保存/加载/导出/拖拽修复）</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/reactflow@11/dist/reactflow.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/reactflow@11/dist/style.css" />
+    <title>WorkBuddy - 工作流编排器 v2.2（纯原生版）</title>
+    <script src="/libs/react.min.js"></script>
+    <script src="/libs/react-dom.min.js"></script>
+    <script src="/libs/babel.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
-        .header { height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-        .header h1 { font-size: 18px; font-weight: 600; }
-        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; white-space: nowrap; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; overflow: hidden; }
+        .header { height: 52px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 10; position: relative; }
+        .header h1 { font-size: 16px; font-weight: 600; }
+        .header-actions { display: flex; gap: 6px; }
+        .btn { padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 500; transition: all 0.2s; white-space: nowrap; }
         .btn-white { background: white; color: #667eea; } .btn-white:hover { background: #e8e8e8; }
         .btn-outline { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); } .btn-outline:hover { background: rgba(255,255,255,0.15); }
         .btn-success { background: #52c41a; color: white; } .btn-success:hover { background: #73d13d; }
         .btn-danger { background: #ff4d4f; color: white; } .btn-danger:hover { background: #ff7875; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .container { display: flex; height: calc(100vh - 56px - 36px); }
-        .sidebar { width: 280px; background: #f8f9fa; border-right: 1px solid #e8e8e8; padding: 14px; overflow-y: auto; }
-        .sidebar h3 { font-size: 13px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .sidebar h3:not(:first-child) { margin-top: 18px; }
-        .node-template { background: white; border: 2px solid #e8e8e8; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: grab; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
-        .node-template:hover { border-color: #667eea; box-shadow: 0 2px 8px rgba(102,126,234,0.12); }
-        .node-template-icon { font-size: 22px; }
-        .node-template-name { font-size: 14px; font-weight: 500; color: #333; }
-        .node-template-desc { font-size: 11px; color: #999; }
-        .save-item { background: white; border: 1px solid #e8e8e8; border-radius: 6px; padding: 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+        .btn-sm { padding: 3px 8px; font-size: 11px; }
+        .container { display: flex; height: calc(100vh - 52px - 32px); }
+        .sidebar { width: 260px; background: #f8f9fa; border-right: 1px solid #e8e8e8; padding: 12px; overflow-y: auto; flex-shrink: 0; }
+        .sidebar h3 { font-size: 12px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .sidebar h3:not(:first-child) { margin-top: 16px; }
+        .node-tpl { background: white; border: 2px solid #e8e8e8; border-radius: 8px; padding: 10px; margin-bottom: 7px; cursor: grab; transition: all 0.2s; display: flex; align-items: center; gap: 8px; user-select: none; }
+        .node-tpl:hover { border-color: #667eea; box-shadow: 0 2px 8px rgba(102,126,234,0.12); }
+        .node-tpl:active { cursor: grabbing; }
+        .node-tpl-icon { font-size: 20px; }
+        .node-tpl-name { font-size: 13px; font-weight: 500; color: #333; }
+        .node-tpl-desc { font-size: 10px; color: #999; }
+        .save-item { background: white; border: 1px solid #e8e8e8; border-radius: 6px; padding: 8px 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
         .save-item:hover { border-color: #667eea; }
-        .save-item-name { font-size: 13px; font-weight: 500; color: #333; }
-        .save-item-time { font-size: 11px; color: #999; }
-        .save-item-actions { display: flex; gap: 4px; }
-        .save-item-actions button { padding: 2px 8px; border: 1px solid #e8e8e8; border-radius: 4px; background: white; cursor: pointer; font-size: 11px; transition: all 0.2s; }
-        .save-item-actions button:hover { background: #f0f0f0; }
-        .save-item-actions .btn-load { color: #1890ff; border-color: #91d5ff; }
-        .save-item-actions .btn-load:hover { background: #e6f7ff; }
-        .save-item-actions .btn-del { color: #ff4d4f; border-color: #ffa39e; }
-        .save-item-actions .btn-del:hover { background: #fff1f0; }
-        .canvas { flex: 1; position: relative; }
-        .status-bar { height: 36px; background: #fafafa; border-top: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 12px; color: #666; }
-        .node-custom { padding: 12px 14px; border-radius: 8px; min-width: 140px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: white; }
-        .node-custom-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .node-custom-icon { font-size: 18px; }
-        .node-custom-title { font-size: 14px; font-weight: 600; }
-        .node-custom-desc { font-size: 11px; color: #999; }
-        .node-custom-status { margin-top: 8px; padding: 4px 8px; border-radius: 4px; font-size: 11px; text-align: center; }
-        .status-ready { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
-        .status-running { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
-        .status-success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
-        .status-error { background: #fff2e8; color: #fa541c; border: 1px solid #ffbb96; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-box { background: white; border-radius: 12px; padding: 24px; min-width: 360px; max-width: 500px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
-        .modal-box h3 { margin-bottom: 16px; font-size: 16px; color: #333; }
-        .modal-box input { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 14px; margin-bottom: 16px; outline: none; }
-        .modal-box input:focus { border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,0.15); }
-        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-        .toast { position: fixed; top: 70px; right: 20px; background: #52c41a; color: white; padding: 10px 18px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 999; animation: slideIn 0.3s ease; }
-        .toast.error { background: #ff4d4f; }
+        .save-item-name { font-size: 12px; font-weight: 500; color: #333; }
+        .save-item-time { font-size: 10px; color: #999; }
+        .save-item-actions { display: flex; gap: 3px; }
+        .save-item-actions button { padding: 2px 6px; border: 1px solid #e8e8e8; border-radius: 3px; background: white; cursor: pointer; font-size: 10px; }
+        .canvas-wrap { flex: 1; position: relative; overflow: hidden; background: #fafbfc; cursor: default; }
+        .canvas-wrap svg { width: 100%; height: 100%; }
+        .canvas-wrap.dragging { cursor: grabbing; }
+        .node-block { position: absolute; min-width: 130px; padding: 10px 12px; border-radius: 8px; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: move; user-select: none; z-index: 5; font-size: 12px; }
+        .node-block.selected { border-color: #667eea !important; box-shadow: 0 0 0 2px rgba(102,126,234,0.3); }
+        .node-block .nb-header { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+        .node-block .nb-icon { font-size: 16px; }
+        .node-block .nb-title { font-size: 13px; font-weight: 600; }
+        .node-block .nb-desc { font-size: 10px; color: #999; }
+        .node-block .nb-status { margin-top: 6px; padding: 3px 6px; border-radius: 3px; font-size: 10px; text-align: center; }
+        .node-block .connector { position: absolute; width: 12px; height: 12px; background: #667eea; border: 2px solid white; border-radius: 50%; cursor: crosshair; z-index: 10; }
+        .connector.out { bottom: -6px; left: 50%; margin-left: -6px; }
+        .connector.in { top: -6px; left: 50%; margin-left: -6px; }
+        .status-bar { height: 32px; background: #fafafa; border-top: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 11px; color: #888; }
+        .toast { position: fixed; top: 64px; right: 20px; padding: 8px 16px; border-radius: 6px; font-size: 13px; color: white; z-index: 999; animation: slideIn 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .toast.ok { background: #52c41a; } .toast.err { background: #ff4d4f; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        .execution-log { position: absolute; bottom: 60px; right: 20px; width: 400px; max-height: 300px; background: white; border: 1px solid #e8e8e8; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 14px; overflow-y: auto; display: none; z-index: 10; }
-        .execution-log.show { display: block; }
-        .log-item { padding: 6px 8px; margin-bottom: 4px; border-left: 3px solid #667eea; background: #f8f9fa; font-size: 12px; }
-        .log-time { color: #999; margin-right: 8px; }
-        .empty-saves { text-align: center; color: #ccc; padding: 20px 0; font-size: 13px; }
-        input[type="file"] { display: none; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-box { background: white; border-radius: 10px; padding: 20px; min-width: 300px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+        .modal-box h3 { margin-bottom: 12px; font-size: 15px; }
+        .modal-box input { width: 100%; padding: 8px 10px; border: 1px solid #d9d9d9; border-radius: 5px; font-size: 13px; margin-bottom: 12px; outline: none; }
+        .modal-box input:focus { border-color: #667eea; }
+        .modal-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .conn-line { stroke: #667eea; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+        .conn-line.running { stroke: #52c41a; stroke-dasharray: 8 4; animation: dashMove 1s linear infinite; }
+        @keyframes dashMove { to { stroke-dashoffset: -24; } }
+        .empty-saves { text-align: center; color: #ccc; padding: 16px 0; font-size: 12px; }
+        .exec-log { position: absolute; bottom: 8px; right: 8px; width: 380px; max-height: 250px; background: #1a1a2e; border-radius: 8px; padding: 12px; overflow-y: auto; z-index: 100; display: none; color: #a8d8a8; font-size: 11px; font-family: 'Consolas', monospace; }
+        .exec-log.show { display: block; }
+        .log-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .log-time { color: #888; margin-right: 8px; }
     </style>
+    <svg style="display:none"><defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#667eea"/></marker></defs></svg>
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
-        const { useState, useCallback, useRef, useEffect, useMemo } = React;
-        const { ReactFlow, Background, Controls, MiniMap, addEdge, useNodesState, useEdgesState, applyNodeChanges, applyEdgeChanges, Handle, Position, useReactFlow, ReactFlowProvider } = ReactFlow;
+        const { useState, useCallback, useRef, useEffect } = React;
 
-        // ==================== localStorage 封装 ====================
-        const STORAGE_KEY = 'workflow_editor_saves';
+        const NODE_TEMPLATES = [
+            { type:'generate',   label:'智能文案生成', icon:'📝', desc:'4平台文案+合规自检', color:'#667eea', status:'准备' },
+            { type:'make_video', label:'视频自动生成', icon:'🎬', desc:'剪映/Seedance API', color:'#764ba2', status:'准备' },
+            { type:'publish',    label:'多平台发布',   icon:'📤', desc:'抖音/小红书/B站',   color:'#52c41a', status:'准备' },
+            { type:'monitor',    label:'数据监控',     icon:'📊', desc:'推流指数+评论洞察', color:'#faad14', status:'准备' },
+            { type:'review',     label:'智能审核',     icon:'🔍', desc:'合规审查+敏感词',   color:'#ff4d4f', status:'准备' },
+            { type:'analyse',    label:'效果分析',     icon:'📈', desc:'完播率+互动率',     color:'#1890ff', status:'准备' },
+            { type:'optimize',   label:'AI优化建议',   icon:'🧠', desc:'归因分析+策略调整', color:'#eb2f96', status:'准备' },
+        ];
 
-        function loadSaves() {
-            try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-            catch { return []; }
-        }
+        const COLORS = { ready:'#e8e8e8', running:'#91d5ff', success:'#b7eb8f', error:'#ffbb96' };
+        const BG =    { ready:'#f6ffed', running:'#e6f7ff', success:'#f6ffed', error:'#fff2e8' };
+        const STATUS_LABEL = { ready:'等待', running:'执行中...', success:'完成', error:'失败' };
 
-        function saveSaves(saves) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(saves));
-        }
+        const STORAGE_KEY = 'workflow_editor_v22_saves';
 
-        // ==================== 自定义节点 ====================
-        function CustomNode({ data, selected }) {
-            const colors = { ready: { border: '#e8e8e8', bg: '#f6ffed' }, running: { border: '#91d5ff', bg: '#e6f7ff' }, success: { border: '#b7eb8f', bg: '#f6ffed' }, error: { border: '#ffbb96', bg: '#fff2e8' } };
-            const c = colors[data.status] || colors.ready;
+        function NodeBlock({ node, selected, onSelect, onStartDrag, onConnectStart, onStatus }) {
+            const c = COLORS[node.status] || COLORS.ready;
+            const bg = BG[node.status] || BG.ready;
             return (
-                <div className="node-custom" style={{ border: `2px solid ${selected ? '#667eea' : c.border}`, background: c.bg }}>
-                    <Handle type="target" position={Position.Top} />
-                    <div className="node-custom-header">
-                        <span className="node-custom-icon">{data.icon}</span>
-                        <span className="node-custom-title">{data.label}</span>
-                    </div>
-                    <div className="node-custom-desc">{data.description}</div>
-                    {data.status && (<div className={`node-custom-status status-${data.status}`}>{data.status === 'ready' ? '等待执行' : data.status === 'running' ? '执行中...' : data.status === 'success' ? '✓ 执行成功' : '✗ 执行失败'}</div>)}
-                    <Handle type="source" position={Position.Bottom} />
+                <div
+                    className={'node-block' + (selected ? ' selected' : '')}
+                    style={{ left: node.x, top: node.y, border: `2px solid ${selected ? '#667eea' : c}`, background: bg }}
+                    onMouseDown={e => { e.stopPropagation(); onSelect(node.id); if(e.target.className.includes('node-block')||e.target.className.includes('nb-')) onStartDrag(node.id, e.clientX, e.clientY); }}
+                >
+                    <div className="nb-header"><span className="nb-icon">{node.icon}</span><span className="nb-title">{node.label}</span></div>
+                    <div className="nb-desc">{node.desc}</div>
+                    {node.status && <div className="nb-status" style={{ background: bg, color: node.status==='error'?'#fa541c':node.status==='running'?'#1890ff':'#52c41a', border:`1px solid ${c}` }}>{STATUS_LABEL[node.status]||node.status}</div>}
+                    <div className="connector in" onMouseDown={e => { e.stopPropagation(); onConnectStart(node.id, 'in'); }} title="连接输入" />
+                    <div className="connector out" onMouseDown={e => { e.stopPropagation(); onConnectStart(node.id, 'out'); }} title="连接输出" />
                 </div>
             );
         }
 
-        const INITIAL_NODES = [
-            { id: '1', type: 'custom', position: { x: 100, y: 100 }, data: { label: '智能文案生成', icon: '📝', description: '生成4平台差异化文案+合规自检', status: 'ready' } },
-            { id: '2', type: 'custom', position: { x: 350, y: 100 }, data: { label: '视频自动生成', icon: '🎬', description: '剪映数字人/Seedance API', status: 'ready' } },
-            { id: '3', type: 'custom', position: { x: 600, y: 100 }, data: { label: '多平台发布', icon: '📤', description: '抖音/小红书/B站自动发布', status: 'ready' } },
-            { id: '4', type: 'custom', position: { x: 850, y: 100 }, data: { label: '数据监控', icon: '📊', description: '推流指数+评论洞察', status: 'ready' } },
-        ];
-        const INITIAL_EDGES = [
-            { id: 'e1-2', source: '1', target: '2', animated: true },
-            { id: 'e2-3', source: '2', target: '3' },
-            { id: 'e3-4', source: '3', target: '4' },
-        ];
+        function App() {
+            const [nodes, setNodes] = useState([
+                { id:'1', type:'generate', label:'智能文案生成', icon:'📝', desc:'4平台文案+合规自检', x:60, y:80, status:'ready' },
+                { id:'2', type:'make_video', label:'视频自动生成', icon:'🎬', desc:'剪映/Seedance API', x:310, y:80, status:'ready' },
+                { id:'3', type:'publish', label:'多平台发布', icon:'📤', desc:'抖音/小红书/B站', x:560, y:80, status:'ready' },
+                { id:'4', type:'monitor', label:'数据监控', icon:'📊', desc:'推流指数+评论洞察', x:810, y:80, status:'ready' },
+            ]);
+            const [edges, setEdges] = useState([
+                { id:'e1-2', from:'1', to:'2' },
+                { id:'e2-3', from:'2', to:'3' },
+                { id:'e3-4', from:'3', to:'4' },
+            ]);
+            const [selectedId, setSelectedId] = useState(null);
+            const [saves, setSaves] = useState(() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch { return []; } });
+            const [showModal, setShowModal] = useState(false);
+            const [saveName, setSaveName] = useState('');
+            const [toast, setToast] = useState(null);
+            const [executing, setExecuting] = useState(false);
+            const [showLog, setShowLog] = useState(false);
+            const [logItems, setLogItems] = useState([]);
+            const [connecting, setConnecting] = useState(null); // { nodeId, dir }
+            const dragRef = useRef(null);
+            const nextId = useRef(5);
+            const edgeIdRef = useRef(4);
+            const canvasRef = useRef(null);
 
-        // ==================== FlowCanvas（拖拽修复：screenToFlowPosition）====================
-        function FlowCanvas({ nodes, edges, onNodesChange, onEdgesChange, onConnect, setNodes }) {
-            const { screenToFlowPosition } = useReactFlow();
+            const doToast = (msg, isErr) => { setToast({msg,err:isErr}); setTimeout(()=>setToast(null),2000); };
+            const addLog = msg => setLogItems(p=>[...p,{time:new Date().toLocaleTimeString('zh-CN',{hour12:false}),msg}]);
 
-            const onDrop = useCallback((e) => {
-                e.preventDefault();
-                const type = e.dataTransfer.getData('application/reactflow-type');
-                if (!type) return;
-                const dataStr = e.dataTransfer.getData('application/reactflow-data');
-                if (!dataStr) return;
-                const data = JSON.parse(dataStr);
-                const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-                const id = Date.now().toString(36);
-                setNodes(nds => [...nds, { id, type, position, data }]);
-            }, [screenToFlowPosition, setNodes]);
-
-            const onDragOver = useCallback((e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
+            // ===== 拖拽 =====
+            const onDragStart = useCallback((e, tpl) => {
+                e.dataTransfer.setData('text/plain', JSON.stringify(tpl));
+                e.dataTransfer.effectAllowed = 'move';
             }, []);
 
-            return (
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
-                    nodeTypes={{ custom: CustomNode }}
-                    fitView
-                    onDrop={onDrop}
-                    onDragOver={onDragOver}
-                >
-                    <Background />
-                    <Controls />
-                    <MiniMap />
-                </ReactFlow>
-            );
-        }
+            const onCanvasDrop = useCallback((e) => {
+                e.preventDefault();
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left - 65;
+                const y = e.clientY - rect.top - 30;
+                let tplStr = e.dataTransfer.getData('text/plain');
+                if (!tplStr) return;
+                const tpl = JSON.parse(tplStr);
+                const id = String(nextId.current++);
+                setNodes(prev => [...prev, { id, type:tpl.type, label:tpl.label, icon:tpl.icon, desc:tpl.desc, x, y, status:'ready' }]);
+            }, []);
 
-        // ==================== 主应用 ====================
-        function App() {
-            const [nodes, setNodes, onNodesChange] = useNodesState(INITIAL_NODES);
-            const [edges, setEdges, onEdgesChange] = useEdgesState(INITIAL_EDGES);
-            const [saves, setSaves] = useState(loadSaves);
-            const [showModal, setShowModal] = useState(false);
-            const [modalMode, setModalMode] = useState('save'); // save | rename
-            const [saveName, setSaveName] = useState('');
-            const [renameId, setRenameId] = useState(null);
-            const [toast, setToast] = useState(null);
-            const [showLog, setShowLog] = useState(false);
-            const [executing, setExecuting] = useState(false);
-            const [logItems, setLogItems] = useState([]);
-            const [currentSaveId, setCurrentSaveId] = useState(null);
-            const fileInputRef = useRef(null);
+            const onCanvasDragOver = useCallback(e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }, []);
 
-            const showToast = (msg, isError = false) => {
-                setToast({ msg, error: isError });
-                setTimeout(() => setToast(null), 2500);
-            };
+            // ===== 节点拖拽移动 =====
+            const onStartDragNode = useCallback((nodeId, startX, startY) => {
+                dragRef.current = { nodeId, startX, startY, origX:0, origY:0 };
+                setNodes(prev => {
+                    const n = prev.find(nd => nd.id === nodeId);
+                    if (n) { dragRef.current.origX = n.x; dragRef.current.origY = n.y; }
+                    return prev;
+                });
+            }, []);
 
-            const addLog = (msg) => setLogItems(prev => [...prev, { time: new Date().toLocaleTimeString('zh-CN', { hour12: false }), msg }]);
-
-            // ---- 保存 ----
-            const handleSave = () => {
-                if (!saves.some(s => s.id === currentSaveId) || currentSaveId === null) {
-                    setModalMode('save'); setSaveName(''); setShowModal(true);
-                } else {
-                    // 覆盖当前
-                    const now = new Date().toLocaleString('zh-CN');
-                    const updated = saves.map(s => s.id === currentSaveId ? { ...s, nodes, edges, savedAt: now } : s);
-                    saveSaves(updated); setSaves(updated);
-                    showToast('覆盖保存成功 ✓');
-                }
-            };
-            const handleSaveAs = () => { setModalMode('save'); setSaveName(''); setRenameId(null); setShowModal(true); };
-            const confirmSave = () => {
-                const name = saveName.trim() || new Date().toLocaleString('zh-CN');
-                const now = new Date().toLocaleString('zh-CN');
-                const id = renameId || Date.now().toString(36);
-                const save = { id, name, nodes, edges, savedAt: now };
-                let updated;
-                if (renameId) {
-                    // 另存为（用新ID）
-                    save.id = Date.now().toString(36);
-                    save.name = name;
-                    updated = [...saves, save];
-                } else {
-                    updated = [...saves, save];
-                }
-                saveSaves(updated); setSaves(updated); setCurrentSaveId(save.id);
-                setShowModal(false);
-                showToast('已保存 ✓');
-            };
-
-            // ---- 加载 ----
-            const handleLoad = (save) => {
-                setNodes(save.nodes); setEdges(save.edges); setCurrentSaveId(save.id);
-                showToast(`已加载: ${save.name} ✓`);
-            };
-
-            // ---- 删除 ----
-            const handleDelete = (id) => {
-                const updated = saves.filter(s => s.id !== id);
-                saveSaves(updated); setSaves(updated);
-                if (currentSaveId === id) setCurrentSaveId(null);
-                showToast('已删除 ✓');
-            };
-
-            // ---- 导出 JSON ----
-            const handleExport = () => {
-                const data = { name: saves.find(s => s.id === currentSaveId)?.name || '工作流', nodes, edges, exportedAt: new Date().toISOString() };
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `workflow_${Date.now()}.json`; a.click();
-                URL.revokeObjectURL(url);
-                showToast('导出成功 ✓');
-            };
-
-            // ---- 导入 JSON ----
-            const handleImportClick = () => fileInputRef.current?.click();
-            const handleImportFile = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-                        if (!data.nodes || !data.edges) throw new Error('格式错误：缺少 nodes/edges');
-                        setNodes(data.nodes); setEdges(data.edges);
-                        showToast(`已导入: ${data.name || '未知'} ✓`);
-                    } catch (err) {
-                        showToast(`导入失败: ${err.message}`, true);
-                    }
-                };
-                reader.readAsText(file);
-                e.target.value = '';
-            };
-
-            // ---- 新建 ----
-            const handleNew = () => {
-                setNodes(INITIAL_NODES); setEdges(INITIAL_EDGES);
-                setCurrentSaveId(null);
-                showToast('已创建新工作流 ✓');
-            };
-
-            // ---- 执行 ----
-            const handleExecute = () => {
-                setExecuting(true); setShowLog(true); setLogItems([]);
-                addLog('工作流开始执行...');
-                const update = (id, status, msg) => {
-                    setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, status } } : n));
-                    addLog(msg);
-                };
-                setTimeout(() => update('1', 'running', '▶ 节点[智能文案生成] 开始执行...'), 500);
-                setTimeout(() => update('1', 'success', '✓ 节点[智能文案生成] 执行成功'), 1500);
-                setTimeout(() => update('2', 'running', '▶ 节点[视频自动生成] 开始执行...'), 2000);
-                setTimeout(() => update('2', 'success', '✓ 节点[视频自动生成] 执行成功'), 3500);
-                setTimeout(() => update('3', 'running', '▶ 节点[多平台发布] 开始执行...'), 4000);
-                setTimeout(() => update('3', 'success', '✓ 节点[多平台发布] 执行成功'), 5000);
-                setTimeout(() => update('4', 'running', '▶ 节点[数据监控] 开始执行...'), 5500);
-                setTimeout(() => { update('4', 'success', '✓ 节点[数据监控] 执行成功'); setExecuting(false); addLog('🏁 工作流全部完成'); }, 7000);
-            };
-
-            const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)), [setEdges]);
-
-            // 自动保存（30秒）
             useEffect(() => {
-                if (currentSaveId) {
-                    const timer = setInterval(() => {
-                        const now = new Date().toLocaleString('zh-CN');
-                        const updated = saves.map(s => s.id === currentSaveId ? { ...s, nodes, edges, savedAt: now } : s);
-                        saveSaves(updated); setSaves(updated);
-                    }, 30000);
-                    return () => clearInterval(timer);
-                }
-            }, [currentSaveId, nodes, edges]);
+                const onMove = (e) => {
+                    if (!dragRef.current) return;
+                    const { nodeId, startX, startY, origX, origY } = dragRef.current;
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+                    setNodes(prev => prev.map(n => n.id===nodeId ? {...n, x:Math.max(0,origX+dx), y:Math.max(0,origY+dy)} : n));
+                };
+                const onUp = () => { dragRef.current = null; };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onUp);
+                return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+            }, []);
 
+            // ===== 连接线 =====
+            const onConnectStart = useCallback((nodeId, dir) => {
+                setConnecting({ nodeId, dir });
+            }, []);
+
+            const onNodeClickForConnect = useCallback((targetId) => {
+                if (!connecting) return;
+                if (connecting.nodeId === targetId) { setConnecting(null); return; }
+                if (connecting.dir === 'out') {
+                    const eid = 'e' + (edgeIdRef.current++);
+                    if (!edges.find(ed => ed.from===connecting.nodeId && ed.to===targetId)) {
+                        setEdges(prev => [...prev, { id:eid, from:connecting.nodeId, to:targetId }]);
+                    }
+                } else {
+                    const eid = 'e' + (edgeIdRef.current++);
+                    if (!edges.find(ed => ed.from===targetId && ed.to===connecting.nodeId)) {
+                        setEdges(prev => [...prev, { id:eid, from:targetId, to:connecting.nodeId }]);
+                    }
+                }
+                setConnecting(null);
+            }, [connecting, edges]);
+
+            const onDelEdge = useCallback((edgeId) => {
+                setEdges(prev => prev.filter(e => e.id !== edgeId));
+            }, []);
+
+            const onDelNode = useCallback(() => {
+                if (!selectedId) return;
+                setNodes(prev => prev.filter(n => n.id !== selectedId));
+                setEdges(prev => prev.filter(e => e.from !== selectedId && e.to !== selectedId));
+                setSelectedId(null);
+                doToast('已删除节点');
+            }, [selectedId]);
+
+            // ===== 保存 =====
+            const handleSave = () => { setSaveName(''); setShowModal(true); };
+            const confirmSave = () => {
+                const name = saveName.trim() || ('工作流-' + new Date().toLocaleDateString('zh-CN'));
+                const now = new Date().toLocaleString('zh-CN');
+                const entry = { id:Date.now().toString(36), name, nodes, edges, savedAt:now };
+                const updated = [entry, ...saves].slice(0, 20);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                setSaves(updated);
+                setShowModal(false);
+                doToast('保存成功 ✓');
+            };
+
+            const handleLoad = entry => {
+                if (!confirm(`加载"${entry.name}"？当前未保存的修改将丢失。`)) return;
+                setNodes(entry.nodes);
+                setEdges(entry.edges);
+                nextId.current = Math.max(...entry.nodes.map(n=>parseInt(n.id)||0), 4) + 1;
+                edgeIdRef.current = Math.max(...entry.edges.map(e=>parseInt(e.id.slice(1))||0), 4) + 1;
+                doToast('已加载 ✓');
+            };
+
+            const handleDelSave = id => {
+                const updated = saves.filter(s => s.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                setSaves(updated);
+            };
+
+            const handleExport = () => {
+                const data = JSON.stringify({ nodes, edges, exportedAt:new Date().toISOString() }, null, 2);
+                const blob = new Blob([data], { type:'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'workflow-' + new Date().toISOString().slice(0,10) + '.json';
+                a.click();
+                URL.revokeObjectURL(url);
+                doToast('已导出 ✓');
+            };
+
+            const handleImport = () => {
+                const input = document.createElement('input');
+                input.type = 'file'; input.accept = '.json';
+                input.onchange = e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        try {
+                            const data = JSON.parse(ev.target.result);
+                            if (data.nodes && data.edges) {
+                                setNodes(data.nodes); setEdges(data.edges);
+                                nextId.current = Math.max(...data.nodes.map(n=>parseInt(n.id)||0), 4) + 1;
+                                edgeIdRef.current = Math.max(...data.edges.map(e=>parseInt(e.id.slice(1))||0), 4) + 1;
+                                doToast('已导入 ✓');
+                            }
+                        } catch { doToast('文件格式错误', true); }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            };
+
+            const handleNew = () => { if (confirm('新建工作流？当前内容将丢失。')) { setNodes([]); setEdges([]); setSelectedId(null); nextId.current=1; edgeIdRef.current=1; } };
+
+            // ===== 模拟执行 =====
+            const handleExecute = async () => {
+                setExecuting(true); setShowLog(true); setLogItems([]);
+                const sorted = [...nodes];
+                // 拓扑排序
+                const inDegree = {}; const adj = {};
+                sorted.forEach(n => { inDegree[n.id]=0; adj[n.id]=[]; });
+                edges.forEach(e => { adj[e.from].push(e.to); inDegree[e.to]=(inDegree[e.to]||0)+1; });
+                const queue = sorted.filter(n => !inDegree[n.id]).map(n=>n.id);
+                const order = [];
+                while (queue.length) {
+                    const id = queue.shift();
+                    order.push(id);
+                    (adj[id]||[]).forEach(to => { inDegree[to]--; if(inDegree[to]===0) queue.push(to); });
+                }
+
+                for (const nid of order) {
+                    setNodes(prev => prev.map(n => n.id===nid ? {...n, status:'running'} : n));
+                    // 高亮相关连线
+                    setEdges(prev => prev.map(e => e.from===nid ? {...e, running:true} : e));
+                    addLog(`[执行] 节点 ${nodes.find(n=>n.id===nid)?.label||nid} 开始...`);
+                    await new Promise(r => setTimeout(r, 800 + Math.random()*1200));
+                    const ok = Math.random() > 0.15;
+                    setNodes(prev => prev.map(n => n.id===nid ? {...n, status:ok?'success':'error'} : n));
+                    setEdges(prev => prev.map(e => e.from===nid ? {...e, running:false} : e));
+                    addLog(ok ? `[完成] 节点执行成功 ✓` : `[失败] 节点执行异常 ✗`);
+                }
+                setExecuting(false);
+                addLog('工作流执行完毕。');
+            };
+
+            // ===== 计算连线坐标 =====
+            const calcLines = () => {
+                return edges.map(edge => {
+                    const from = nodes.find(n => n.id === edge.from);
+                    const to = nodes.find(n => n.id === edge.to);
+                    if (!from || !to) return null;
+                    return {
+                        ...edge,
+                        x1: from.x + 65, y1: from.y + 90,
+                        x2: to.x + 65, y2: to.y,
+                    };
+                }).filter(Boolean);
+            };
+
+            const lines = calcLines();
+
+            // ===== 渲染 =====
             return (
-                <div>
-                    {/* Header */}
+                <>
                     <div className="header">
-                        <h1>🚀 WorkBuddy 工作流编排器 v2.1</h1>
+                        <h1>🔧 工作流编排器 v2.2</h1>
                         <div className="header-actions">
-                            <button className="btn btn-outline" onClick={() => setShowLog(!showLog)}>{showLog ? '隐藏日志' : '日志'}</button>
-                            <button className="btn btn-outline" onClick={handleExport}>📥 导出 JSON</button>
-                            <button className="btn btn-outline" onClick={handleImportClick}>📤 导入 JSON</button>
-                            <input type="file" ref={fileInputRef} accept=".json" onChange={handleImportFile} />
-                            <button className="btn btn-outline" onClick={handleNew}>➕ 新建</button>
-                            <button className="btn btn-outline" onClick={handleSave}>💾 保存</button>
-                            <button className="btn btn-outline" onClick={handleSaveAs}>📋 另存为</button>
-                            <button className="btn btn-success" onClick={handleExecute} disabled={executing}>{executing ? '⏳ 执行中...' : '▶ 执行'}</button>
+                            <button className="btn btn-white btn-sm" onClick={handleNew}>新建</button>
+                            <button className="btn btn-outline btn-sm" onClick={handleSave}>保存</button>
+                            <button className="btn btn-outline btn-sm" onClick={handleImport}>导入</button>
+                            <button className="btn btn-outline btn-sm" onClick={handleExport}>导出</button>
+                            <button className="btn btn-success btn-sm" onClick={handleExecute} disabled={executing || nodes.length===0}>
+                                {executing ? '执行中...' : '▶ 模拟执行'}
+                            </button>
+                            <button className="btn btn-outline btn-sm" onClick={()=>setShowLog(!showLog)}>
+                                {showLog ? '隐藏日志' : '日志'}
+                            </button>
+                            <button className="btn btn-danger btn-sm" onClick={onDelNode} disabled={!selectedId}>删除</button>
                         </div>
                     </div>
 
-                    {/* Container */}
                     <div className="container">
-                        {/* Sidebar */}
                         <div className="sidebar">
-                            <h3>📦 节点模板（拖拽到画布）</h3>
-                            {[
-                                { icon: '📝', name: '智能文案生成', desc: '4平台差异化文案+合规自检', color: '#52c41a' },
-                                { icon: '🎬', name: '视频自动生成', desc: '剪映数字人/Seedance API', color: '#1890ff' },
-                                { icon: '📤', name: '多平台发布', desc: '抖音/小红书/B站自动发布', color: '#faad14' },
-                                { icon: '📊', name: '数据监控', desc: '推流指数+评论洞察', color: '#722ed1' },
-                                { icon: '🔍', name: 'SEO优化', desc: '标题/标签/描述优化', color: '#eb2f96' },
-                                { icon: '💬', name: '评论回复', desc: 'AI自动回复用户评论', color: '#13c2c2' },
-                            ].map((t, i) => (
-                                <div key={i} className="node-template" style={{ borderColor: t.color }} draggable={true} onDragStart={(e) => { e.dataTransfer.setData('application/reactflow-type', 'custom'); e.dataTransfer.setData('application/reactflow-data', JSON.stringify({ label: t.name, icon: t.icon, description: t.desc, status: 'ready' })); }}>
-                                    <span className="node-template-icon">{t.icon}</span>
-                                    <div><div className="node-template-name">{t.name}</div><div className="node-template-desc">{t.desc}</div></div>
+                            <h3>📦 节点模板（拖入画布）</h3>
+                            {NODE_TEMPLATES.map(tpl => (
+                                <div key={tpl.type} className="node-tpl" draggable onDragStart={e => onDragStart(e, tpl)}>
+                                    <span className="node-tpl-icon">{tpl.icon}</span>
+                                    <div>
+                                        <div className="node-tpl-name">{tpl.label}</div>
+                                        <div className="node-tpl-desc">{tpl.desc}</div>
+                                    </div>
                                 </div>
                             ))}
 
-                            <h3>💾 已保存的工作流</h3>
-                            {saves.length === 0 ? (
-                                <div className="empty-saves">暂无保存的工作流</div>
-                            ) : (
+                            <h3>💾 保存记录 ({saves.length})</h3>
+                            {saves.length === 0 ? <div className="empty-saves">暂无保存</div> :
                                 saves.map(s => (
-                                    <div key={s.id} className="save-item" style={currentSaveId === s.id ? { borderColor: '#667eea', background: '#f0f5ff' } : {}}>
-                                        <div>
-                                            <div className="save-item-name">{s.name}</div>
-                                            <div className="save-item-time">{s.savedAt} | {s.nodes.length}节点 {s.edges.length}连线</div>
-                                        </div>
+                                    <div key={s.id} className="save-item">
+                                        <div><div className="save-item-name">{s.name}</div><div className="save-item-time">{s.savedAt}</div></div>
                                         <div className="save-item-actions">
-                                            <button className="btn-load" onClick={() => handleLoad(s)}>加载</button>
-                                            <button className="btn-del" onClick={() => handleDelete(s.id)}>删除</button>
+                                            <button style={{color:'#1890ff',borderColor:'#91d5ff'}} onClick={()=>handleLoad(s)}>加载</button>
+                                            <button style={{color:'#ff4d4f',borderColor:'#ffa39e'}} onClick={()=>handleDelSave(s.id)}>删</button>
                                         </div>
                                     </div>
                                 ))
-                            )}
+                            }
                         </div>
 
-                        {/* Canvas */}
-                        <div className="canvas">
-                            <ReactFlowProvider>
-                                <FlowCanvas nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} setNodes={setNodes} />
-                            </ReactFlowProvider>
-
-                            <div className={`execution-log ${showLog ? 'show' : ''}`}>
-                                <h4 style={{marginBottom:'10px',fontSize:'14px'}}>📋 执行日志</h4>
-                                {logItems.map((item, i) => (
-                                    <div key={i} className="log-item"><span className="log-time">{item.time}</span><span>{item.msg}</span></div>
+                        <div
+                            className="canvas-wrap"
+                            ref={canvasRef}
+                            onClick={e => { if(e.target===canvasRef.current || e.target.tagName==='svg') setSelectedId(null); }}
+                            onDrop={onCanvasDrop}
+                            onDragOver={onCanvasDragOver}
+                        >
+                            <svg style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:1 }}>
+                                {lines.map(line => (
+                                    <g key={line.id}>
+                                        <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}
+                                            className={'conn-line' + (line.running ? ' running' : '')}
+                                            style={{ pointerEvents:'stroke' }}
+                                            onClick={e => { e.stopPropagation(); onDelEdge(line.id); }}
+                                            title="点击删除连线" />
+                                    </g>
                                 ))}
-                                {logItems.length === 0 && <div style={{color:'#999',fontSize:'12px',textAlign:'center',padding:'20px'}}>暂无日志</div>}
-                            </div>
+                            </svg>
+                            {nodes.map(node => (
+                                <NodeBlock
+                                    key={node.id}
+                                    node={node}
+                                    selected={selectedId === node.id}
+                                    onSelect={id => { setSelectedId(id); if(connecting) onNodeClickForConnect(id); }}
+                                    onStartDrag={onStartDragNode}
+                                    onConnectStart={onConnectStart}
+                                />
+                            ))}
+                            {connecting && (
+                                <div style={{ position:'absolute', top:0, left:0, right:0, bottom:0, background:'rgba(102,126,234,0.03)', zIndex:50, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                    <span style={{ background:'white', padding:'8px 16px', borderRadius:'8px', boxShadow:'0 2px 8px rgba(0,0,0,0.15)', fontSize:'13px' }}>
+                                        点击目标节点完成连接 · 点击空白取消
+                                    </span>
+                                </div>
+                            )}
+                            {executing && <div className="exec-log show">{
+                                logItems.map((l,i)=><div key={i} className="log-entry"><span className="log-time">{l.time}</span>{l.msg}</div>)
+                            }</div>}
+                            {!executing && showLog && <div className="exec-log show">{
+                                logItems.map((l,i)=><div key={i} className="log-entry"><span className="log-time">{l.time}</span>{l.msg}</div>)
+                            }</div>}
                         </div>
                     </div>
 
-                    {/* Status Bar */}
                     <div className="status-bar">
-                        <div><span style={{marginRight:'16px'}}>节点: {nodes.length}</span><span style={{marginRight:'16px'}}>连线: {edges.length}</span><span>状态: {executing ? '执行中' : '就绪'}</span></div>
-                        <div>v2.1 | 拖拽添加节点（坐标修复） | 双击编辑 | 自动保存（30s） | Ctrl+S 保存 | <span style={{color: currentSaveId ? '#52c41a' : '#999'}}>{currentSaveId ? '已关联保存' : '未保存'}</span></div>
+                        <span>节点: {nodes.length} | 连线: {edges.length} | {selectedId ? `已选: ${nodes.find(n=>n.id===selectedId)?.label}` : '未选中'}</span>
+                        <span>拖拽侧边栏节点到画布 · 拖动节点移动 · 点击节点底部○创建连线 · 点击连线删除</span>
                     </div>
 
-                    {/* Save Modal */}
                     {showModal && (
-                        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-                            <div className="modal-box" onClick={e => e.stopPropagation()}>
-                                <h3>{modalMode === 'save' ? '保存工作流' : '重命名'}</h3>
-                                <input type="text" placeholder="输入名称..." value={saveName} onChange={e => setSaveName(e.target.value)} autoFocus onKeyDown={e => e.key === 'Enter' && confirmSave()} />
+                        <div className="modal-overlay" onClick={e => { if(e.target.className==='modal-overlay') setShowModal(false); }}>
+                            <div className="modal-box">
+                                <h3>保存工作流</h3>
+                                <input value={saveName} onChange={e=>setSaveName(e.target.value)} placeholder="输入名称（可选）" autoFocus onKeyDown={e=>{if(e.key==='Enter')confirmSave(); if(e.key==='Escape')setShowModal(false);}} />
                                 <div className="modal-actions">
-                                    <button className="btn" onClick={() => setShowModal(false)} style={{background:'#f5f5f5',color:'#666'}}>取消</button>
-                                    <button className="btn btn-success" onClick={confirmSave}>确定</button>
+                                    <button className="btn btn-outline btn-sm" style={{color:'#333',border:'1px solid #d9d9d9'}} onClick={()=>setShowModal(false)}>取消</button>
+                                    <button className="btn btn-success btn-sm" onClick={confirmSave}>保存</button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Toast */}
-                    {toast && <div className={`toast ${toast.error ? 'error' : ''}`}>{toast.msg}</div>}
-                </div>
+                    {toast && <div className={'toast ' + (toast.err ? 'err' : 'ok')}>{toast.msg}</div>}
+                </>
             );
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>

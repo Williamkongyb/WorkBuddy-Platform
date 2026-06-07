@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WorkBuddy - 多引擎渲染调度器 v4.0</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="/libs/react.min.js"></script>
+    <script src="/libs/react-dom.min.js"></script>
+    <script src="/libs/babel.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -58,10 +58,10 @@
         }
         .engine-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(102,126,234,0.1); }
         .engine-card.selected { border-color: var(--primary); background: rgba(102,126,234,0.06); }
-        .engine-card-icon { font-size: 24px; margin-bottom: 4px; }
-        .engine-card-name { font-size: 12px; font-weight: 600; color: var(--text); }
-        .engine-card-desc { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
-        .engine-card-quality { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; margin-top: 4px; }
+        .engine-card-icon { font-size: 36px; margin-bottom: 6px; }
+        .engine-card-name { font-size: 14px; font-weight: 600; color: var(--text); }
+        .engine-card-desc { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+        .engine-card-quality { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-top: 5px; }
         .quality-high { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
         .quality-medium { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
         .quality-low { background: #f0f0f0; color: #888; border: 1px solid #d9d9d9; }
@@ -165,11 +165,11 @@
         const ASSET_API = 'http://localhost:8000'; // AssetTracker API
 
         const ENGINE_META = {
-            comfyui:      { name: 'ComfyUI',          icon: '🎨', quality: 'high',   desc: '高质量原创（台式机 GPU）',  color: '#667eea' },
-            nano_banana:  { name: 'Nano Banana',       icon: '🍌', quality: 'high',   desc: 'AI 图片生成（Gemini Flash）', color: '#f06292' },
-            money_printer: { name: 'MoneyPrinter',     icon: '💰', quality: 'medium', desc: '自动流水线中等质量',      color: '#faad14' },
-            remotion:      { name: 'Remotion',          icon: '⚛️', quality: 'medium', desc: 'React 代码化动态排版',    color: '#14b8a6' },
-            ffmpeg:        { name: 'FFmpeg 应急',       icon: '🚨', quality: 'low',    desc: '纯本地保底（无网可用）',  color: '#8c8c8c' },
+            comfyui:      { name: 'ComfyUI创作引擎',   icon: '🎨', quality: '高',   desc: '高质量原创（需台式机 GPU）',  color: '#667eea' },
+            nano_banana:  { name: 'AI图片生成引擎',     icon: '🍌', quality: '高',   desc: 'Gemini Flash 智能图片生成', color: '#f06292' },
+            money_printer: { name: 'MoneyPrinter引擎',  icon: '💰', quality: '中',   desc: '自动流水线快速批量生产',      color: '#faad14' },
+            remotion:      { name: 'Remotion动态引擎',  icon: '⚛️', quality: '中',   desc: 'React代码化动态排版渲染',    color: '#14b8a6' },
+            ffmpeg:        { name: 'FFmpeg应急引擎',    icon: '🚨', quality: '低',    desc: '纯本地保底（断网备用）',  color: '#8c8c8c' },
         };
 
         const PLATFORM_META = {
@@ -439,7 +439,7 @@
                             <div className="engine-grid">
                                 {engineOptions.map(key => {
                                     const m = ENGINE_META[key] || {};
-                                    const qualityMap = { high: 'quality-high', medium: 'quality-medium', low: 'quality-low' };
+                                    const qualityMap = { '高': 'quality-high', '中': 'quality-medium', '低': 'quality-low' };
                                     return (
                                         <div
                                             key={key}
@@ -450,7 +450,7 @@
                                             <div className="engine-card-name">{m.name || key}</div>
                                             <div className="engine-card-desc">{m.desc || ''}</div>
                                             <span className={`engine-card-quality ${qualityMap[m.quality] || 'quality-low'}`}>
-                                                {'⭐'.repeat(m.quality === 'high' ? 3 : m.quality === 'medium' ? 2 : 1)} {m.quality === 'high' ? '高质量' : m.quality === 'medium' ? '中等' : '轻量'}
+                                                {'⭐'.repeat(m.quality === '高' ? 3 : m.quality === '中' ? 2 : 1)} {m.quality === '高' ? '高质量' : m.quality === '中' ? '中等质量' : '轻量级'}
                                             </span>
                                         </div>
                                     );

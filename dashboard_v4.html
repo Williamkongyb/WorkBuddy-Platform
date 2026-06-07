@@ -274,9 +274,9 @@
                 <div class="table-title">🔧 工作流编排器 v2.0</div>
                 <p style="color:var(--text-secondary);margin-bottom:16px;">可视化编排工作流，拖拽节点配置执行步骤。</p>
                 <div style="display:flex;gap:12px;flex-wrap:wrap">
-                    <a href="/workflow_editor_v2.html" target="_blank" style="display:inline-block;padding:12px 24px;background:var(--primary);color:white;text-decoration:none;border-radius:8px;font-weight:500;">🚀 打开工作流编排器</a>
-                    <a href="/multi_engine_panel.html" target="_blank" style="display:inline-block;padding:12px 24px;background:#764ba2;color:white;text-decoration:none;border-radius:8px;font-weight:500;">🎮 多引擎渲染面板</a>
-                    <a href="/asset_tracker_demo.html" target="_blank" style="display:inline-block;padding:12px 24px;background:#52c41a;color:white;text-decoration:none;border-radius:8px;font-weight:500;">📁 媒体资产管理</a>
+                    <a href="http://localhost:8080/workflow_editor_v2.html" target="_blank" style="display:inline-block;padding:12px 24px;background:var(--primary);color:white;text-decoration:none;border-radius:8px;font-weight:500;">🚀 打开工作流编排器</a>
+                    <a href="http://localhost:8080/multi_engine_panel.html" target="_blank" style="display:inline-block;padding:12px 24px;background:#764ba2;color:white;text-decoration:none;border-radius:8px;font-weight:500;">🎮 多引擎渲染面板</a>
+                    <a href="http://localhost:8080/asset_tracker_demo.html" target="_blank" style="display:inline-block;padding:12px 24px;background:#52c41a;color:white;text-decoration:none;border-radius:8px;font-weight:500;">📁 媒体资产管理</a>
                 </div>
             </div>
         </div>
@@ -337,8 +337,8 @@
             const totalVideos = assets.assets ? assets.assets.length : 0;
             const totalSizeMB = status.total_size_mb || 0;
             const currentStage = orch ? orch.current_stage : 'unknown';
-            const scriptsGenerated = orch ? orch.scripts_generated : 0;
-            const videosMade = orch ? orch.videos_made : 0;
+            const scriptsGenerated = orch && orch.stats ? orch.stats.scripts_generated : 0;
+            const videosMade = orch && orch.stats ? orch.stats.videos_made : 0;
 
             // 渲染 KPI 卡片
             const platforms = ['douyin','xiaohongshu','bilibili','shipinhao'];
@@ -500,10 +500,11 @@
         async function loadEngineData() {
             // 多引擎状态
             const engines = await safeFetch(`${API.engine}/engines`, null);
+            const engineNames = { comfyui:'ComfyUI创作引擎', nano_banana:'AI图片生成引擎', money_printer:'MoneyPrinter引擎', remotion:'Remotion动态引擎', ffmpeg:'FFmpeg应急引擎' };
             if (engines && engines.engines) {
                 document.getElementById('engineStatusWrap').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
                     <thead><tr><th>引擎</th><th>描述</th><th>状态</th></tr></thead>
-                    <tbody>${engines.engines.map(e=>`<tr><td><strong>${e.name||e}</strong></td><td>${e.description||'--'}</td><td><span class="engine-badge ok">✓ 就绪</span></td></tr>`).join('')}</tbody></table>`;
+                    <tbody>${engines.engines.map(e=>`<tr><td><strong>${engineNames[e.key]||e.name||e.key}</strong></td><td>${e.description||'实时可用'}</td><td><span class="engine-badge ok">✓ 就绪</span></td></tr>`).join('')}</tbody></table>`;
             } else {
                 document.getElementById('engineStatusWrap').innerHTML = '<div class="error-msg">⚠️ 无法连接多引擎 API (:8300)。请确保 multi_engine_scheduler.py 已启动。<br><button class="retry-btn" onclick="loadEngineData()">重试</button></div>';
             }
@@ -511,11 +512,11 @@
             // Orchestrator 状态
             const orch = await safeFetch(`${API.orch}/pipeline/summary`, null);
             if (orch) {
-                const stages = orch.stages||{};
+                const stages = orch.progress||{};
                 document.getElementById('orchestratorStatusWrap').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
-                    <thead><tr><th>阶段</th><th>状态</th><th>开始时间</th><th>完成时间</th><th>详情</th></tr></thead>
-                    <tbody>${Object.entries(stages).map(([name,s])=>`<tr><td><strong>${name}</strong></td><td><span class="tag ${s.status==='done'?'tag-success':s.status==='running'?'tag-info':s.status==='error'?'tag-danger':'tag-warning'}">${s.status||'idle'}</span></td><td>${s.started||'--'}</td><td>${s.finished||'--'}</td><td>${s.detail||'--'}</td></tr>`).join('')}</tbody></table>
-                    <div style="margin-top:12px;font-size:12px;color:#999">当前阶段: <strong>${orch.current_stage}</strong> | 已生成文案: ${orch.scripts_generated||0} | 已生成视频: ${orch.videos_made||0}</div>`;
+                    <thead><tr><th>阶段</th><th>状态</th><th>描述</th></tr></thead>
+                    <tbody>${Object.entries(stages).map(([name,s])=>`<tr><td><strong>${name}</strong></td><td><span class="tag ${s==='done'?'tag-success':s==='running'?'tag-info':s==='error'?'tag-danger':'tag-warning'}">${s||'idle'}</span></td><td>--</td></tr>`).join('')}</tbody></table>
+                    <div style="margin-top:12px;font-size:12px;color:#999">当前阶段: <strong>${orch.current_stage}</strong> | 已生成文案: ${orch.stats ? orch.stats.scripts_generated : 0} | 已生成视频: ${orch.stats ? orch.stats.videos_made : 0}</div>`;
             } else {
                 document.getElementById('orchestratorStatusWrap').innerHTML = '<div class="error-msg">⚠️ 无法连接 Orchestrator 桥接 (:8200)。请确保 orchestrator_bridge.py 已启动。<br><button class="retry-btn" onclick="loadEngineData()">重试</button></div>';
             }
@@ -527,7 +528,7 @@
             const orch = await safeFetch(`${API.orch}/pipeline/summary`, null);
             let alerts = [];
             if (orch) {
-                const stages = orch.stages||{};
+                const stages = orch.progress||{};
                 if (stages.generate && stages.generate.status === 'error') alerts.push({ type:'danger', icon:'🔴', title:'文案生成失败', desc:stages.generate.detail||'未知错误', time:'近期' });
                 if (stages.make_video && stages.make_video.status === 'error') alerts.push({ type:'danger', icon:'🔴', title:'视频生成失败', desc:stages.make_video.detail||'未知错误', time:'近期' });
                 if (orch.videos_made === 0 && orch.scripts_generated > 0) alerts.push({ type:'warning', icon:'🟡', title:'视频生成pending', desc:`已生成${orch.scripts_generated}条文案，但尚未生成视频`, time:'当前' });

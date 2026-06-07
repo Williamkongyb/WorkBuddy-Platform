@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AssetTrackerPanel — 媒体资产管理控制台</title>
-    <!-- React 18 + Babel standalone — 通过 CDN 加载 -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <title>媒体资产管理控制台 — AssetTracker v1.0</title>
+    <script src="/libs/react.min.js"></script>
+    <script src="/libs/react-dom.min.js"></script>
+    <script src="/libs/babel.min.js"></script>
 </head>
 <body>
     <div id="root"></div>
@@ -16,7 +15,7 @@
         // ==========================================
         // 配置：修改此处为台式机地址
         // ==========================================
-        const API_BASE = 'http://192.168.1.208:8000';
+        const API_BASE = 'http://localhost:8000';
 
         const PLATFORM_MAP = {
             douyin:      { label: '抖音',     color: '#ff0050', icon: '🎵' },
@@ -200,7 +199,7 @@
                 React.createElement('div', { style:{background:'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',color:'white',padding:'14px 24px',display:'flex',justifyContent:'space-between',alignItems:'center'} },
                     React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
                         React.createElement('span', { style:{fontSize:'24px'} }, '\uD83C\uDFAC'),
-                        React.createElement('h2', { style:{fontSize:'18px',fontWeight:600,margin:0} }, 'AssetTrackerPanel'),
+                        React.createElement('h2', { style:{fontSize:'18px',fontWeight:600,margin:0} }, '📁 媒体资产管理'),
                         React.createElement('span', { style:{fontSize:'13px',color:'rgba(255,255,255,0.65)'} }, '媒体资产管理控制台'),
                     ),
                     React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',fontSize:'13px'} },

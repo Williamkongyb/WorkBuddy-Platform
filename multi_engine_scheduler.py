@@ -1066,23 +1066,53 @@ def create_app(host: str = "0.0.0.0", port: int = 8300, config: Optional[Dict] =
             f'<div style="padding:4px 0"><code style="background:#667eea;color:white;padding:2px 6px;border-radius:3px">{k}</code> {v.description}</div>'
             for k, v in ENGINE_REGISTRY.items()
         )
-        html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Multi-Engine API</title>
-<style>body{{font-family:sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#333}}
-h1{{color:#667eea}} pre{{background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px}}
-.endpoint{{margin:14px 0;padding:12px;border-left:3px solid #667eea;background:#fafafa}}
-code{{background:#eee;padding:2px 6px;border-radius:3px}}</style></head><body>
-<h1>🚀 Multi-Engine Render API v4.0</h1>
-<p>端口: <code>8300</code> | CORS: <code>Access-Control-Allow-Origin: *</code></p>
-<h3>🎮 已注册引擎</h3>{engine_list}
-<h3>📡 API 端点</h3>
-<div class="endpoint"><strong>GET /api/status</strong> — 健康检查<br><pre>curl http://localhost:8300/api/status</pre></div>
-<div class="endpoint"><strong>GET /api/engines</strong> — 引擎列表<br><pre>curl http://localhost:8300/api/engines</pre></div>
-<div class="endpoint"><strong>POST /api/render</strong> — 提交渲染任务<br><pre>curl -X POST http://localhost:8300/api/render \\
-  -H "Content-Type: application/json" \\
-  -d '{{"engine_type":"ffmpeg","product":"智能水杯"}}'</pre></div>
-<div class="endpoint"><strong>GET /api/render/{'{task_id}'}</strong> — 查询任务状态</div>
-<div class="endpoint"><strong>POST /api/render/fallback</strong> — 智能降级渲染</div>
-<p style="color:#999;font-size:12px;margin-top:30px">前端面板: multi_engine_panel.html | 后端: multi_engine_scheduler.py</p>
+        html = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>🎮 多引擎渲染调度器 - Multi-Engine API v4.0</title>
+<style>body{{font-family:sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#333}}
+h1{{color:#667eea}} h3{{color:#666;margin-top:24px}}
+pre{{background:#f5f5f5;padding:12px;border-radius:6px;font-size:13px;overflow-x:auto}}
+.endpoint{{margin:14px 0;padding:14px;border-left:4px solid #667eea;background:#f0f5ff;border-radius:0 6px 6px 0}}
+code{{background:#eee;padding:2px 6px;border-radius:3px;font-size:13px}}
+.footer{{color:#999;font-size:12px;margin-top:40px;border-top:1px solid #eee;padding-top:12px}}
+</style></head><body>
+<h1>🎮 多引擎渲染调度器</h1>
+<p><strong>Multi-Engine Render API v4.0</strong> | 服务正常运行中</p>
+<p>🌐 服务地址: <code>http://localhost:{{port}}</code> | CORS: <code>已开启</code></p>
+
+<h3>🎨 已注册引擎</h3>
+{engine_list}
+
+<h3>📡 可用 API 端点</h3>
+<div class="endpoint">
+  <strong>GET /api/status</strong> — 服务健康检查<br>
+  <pre>curl http://localhost:{{port}}/api/status</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/engines</strong> — 获取所有可用引擎列表<br>
+  <pre>curl http://localhost:{{port}}/api/engines</pre>
+</div>
+<div class="endpoint">
+  <strong>POST /api/render</strong> — 提交渲染任务（指定引擎类型）<br>
+  <pre>curl -X POST http://localhost:{{port}}/api/render \
+  -H "Content-Type: application/json" \
+  -d '{{"engine_type":"ffmpeg","product":"智能水杯"}}'</pre>
+</div>
+<div class="endpoint">
+  <strong>GET /api/render/{{'{{task_id}}'}}</strong> — 查询指定任务的渲染状态
+</div>
+<div class="endpoint">
+  <strong>POST /api/render/fallback</strong> — 智能降级渲染（自动选择可用引擎）
+</div>
+
+<h3>🔧 功能说明</h3>
+<ul style="line-height:1.8">
+  <li><strong>策略模式调度</strong>：统一管理 ComfyUI / Nano Banana / MoneyPrinter / Remotion / FFmpeg 五类引擎</li>
+  <li><strong>智能降级</strong>：主引擎失败时自动切换到备用引擎，保证渲染成功率</li>
+  <li><strong>任务追踪</strong>：每个渲染任务分配唯一 ID，可实时查询进度</li>
+  <li><strong>跨域支持</strong>：已开启 CORS，前端面板可直接调用</li>
+</ul>
+
+<p class="footer">前端面板: <a href="http://localhost:8080/multi_engine_panel.html">multi_engine_panel.html</a> | 后端: multi_engine_scheduler.py</p>
 </body></html>"""
         return html
 
