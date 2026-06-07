@@ -281,7 +281,7 @@
                 <span class="s-icon">📊</span>运营仪表盘<span class="s-tag new">v4.0</span>
             </div>
             <div class="s-item" onclick="switchView('iframe-workflow')" data-view="iframe-workflow">
-                <span class="s-icon">🔧</span>工作流编排器<span class="s-tag new">v3.0</span>
+                <span class="s-icon">🔧</span>工作流编排器<span class="s-tag new">v4.0</span>
             </div>
             <div class="s-item" onclick="switchView('iframe-asset')" data-view="iframe-asset">
                 <span class="s-icon">📁</span>资产管理器
@@ -325,7 +325,7 @@
         <!-- Iframe Area -->
         <div id="iframe-area">
             <iframe class="mod-iframe" id="iframe-dashboard" data-src="http://localhost:8080/dashboard_v4.html"></iframe>
-            <iframe class="mod-iframe" id="iframe-workflow" data-src="http://localhost:8080/workflow_editor_v3.html"></iframe>
+            <iframe class="mod-iframe" id="iframe-workflow" data-src="http://localhost:8080/workflow_editor_v4.html"></iframe>
             <iframe class="mod-iframe" id="iframe-asset" data-src="http://localhost:8080/asset_tracker_demo.html"></iframe>
         </div>
 
@@ -348,7 +348,7 @@
                 <div class="w-section-title">🎯 核心功能</div>
                 <div class="w-grid">
                     <div class="w-card" onclick="switchView('iframe-dashboard')"><div class="w-card-icon">📊</div><div class="w-card-title">运营仪表盘 v4.0</div><div class="w-card-desc">6标签页·API探测·Mock降级</div></div>
-                    <div class="w-card" onclick="switchView('iframe-workflow')"><div class="w-card-icon">🔧</div><div class="w-card-title">工作流编排 v3.0</div><div class="w-card-desc">20节点·贝塞尔曲线·小地图</div></div>
+                    <div class="w-card" onclick="switchView('iframe-workflow')"><div class="w-card-icon">🔧</div><div class="w-card-title">工作流编排 v4.0</div><div class="w-card-desc">LiteGraph引擎·拖拽连线·ComfyUI同款</div></div>
                     <div class="w-card" onclick="switchView('pipeline')"><div class="w-card-icon">⚡</div><div class="w-card-title">生产流水线</div><div class="w-card-desc">脚本→视频→发布→监控</div></div>
                     <div class="w-card" onclick="switchView('monitor')"><div class="w-card-icon">📈</div><div class="w-card-title">数据监控看板</div><div class="w-card-desc">多平台·推流指数·投流建议</div></div>
                 </div>
@@ -484,7 +484,7 @@ function switchView(view) {
     const titles = {
         'welcome': '中台首页',
         'iframe-dashboard': '运营仪表盘 v4.0',
-        'iframe-workflow': '工作流编排器 v3.0',
+        'iframe-workflow': '工作流编排器 v4.0',
         'iframe-asset': '资产管理器',
         'pipeline': '生产流水线',
         'monitor': '数据监控看板',

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作流编排器 v4.0 — 基于 LiteGraph.js（ComfyUI 同款引擎）</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litegraph.js@0.7.18/css/litegraph.css">
+<style>
+:root {
+    --bg-deep: #0f0c29; --surface: #1a1a2e; --accent: #667eea;
+    --success: #52c41a; --warn: #faad14; --danger: #ff4d4f; --info: #1890ff;
+    --border: rgba(255,255,255,0.08); --text: #e0e0e0; --text-dim: rgba(255,255,255,0.5);
+    --sidebar-w: 260px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
+    background: var(--bg-deep); color: var(--text); height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column;
+}
+/* ========== Header ========== */
+#header {
+    height: 48px; background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+    flex-shrink: 0; z-index: 100;
+}
+.h-left { display: flex; align-items: center; gap: 10px; }
+.h-title { font-size: 15px; font-weight: 600; }
+.h-badge {
+    background: linear-gradient(135deg,var(--accent),#764ba2);
+    padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 600;
+}
+.h-right { display: flex; gap: 6px; align-items: center; }
+.btn {
+    padding: 5px 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px;
+    background: rgba(255,255,255,0.05); color: var(--text); cursor: pointer;
+    font-size: 11px; font-family: inherit; transition: all 0.15s;
+}
+.btn:hover { background: rgba(255,255,255,0.12); }
+.btn-a { background: var(--accent); border-color: var(--accent); }
+.btn-s { background: var(--success); border-color: var(--success); }
+.btn-d { background: var(--danger); border-color: var(--danger); }
+.btn-w { background: var(--warn); border-color: var(--warn); }
+.btn-a:hover,.btn-s:hover,.btn-d:hover,.btn-w:hover { opacity: 0.85; }
+.h-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
+.h-dot.on { background: var(--success); box-shadow: 0 0 6px var(--success); }
+
+/* ========== Body ========== */
+#body-wrap { display: flex; flex: 1; overflow: hidden; }
+
+/* ========== Sidebar ========== */
+#sidebar {
+    width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border);
+    overflow-y: auto; flex-shrink: 0; padding: 4px 0;
+}
+.s-group { margin-bottom: 2px; }
+.s-group-label {
+    font-size: 10px; color: rgba(255,255,255,0.35); text-transform: uppercase;
+    letter-spacing: 1.5px; padding: 10px 14px 4px;
+}
+.node-tpl {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; margin: 3px 8px; cursor: grab; display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s; font-size: 12px;
+}
+.node-tpl:hover { border-color: var(--accent); background: rgba(102,126,234,0.08); }
+.node-tpl:active { cursor: grabbing; opacity: 0.6; }
+.nt-icon { font-size: 16px; flex-shrink: 0; }
+.nt-info { flex: 1; min-width: 0; }
+.nt-name { font-size: 12px; font-weight: 600; }
+.nt-desc { font-size: 10px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ========== Canvas Area ========== */
+#canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+#canvas-wrap .litegraph {
+    background: var(--bg-deep) !important;
+}
+/* Override LiteGraph styles */
+.litegraph {
+    background-color: var(--bg-deep) !important;
+}
+.lgraphcanvas {
+    background-color: var(--bg-deep) !important;
+}
+
+/* ========== Status Bar ========== */
+#statusbar {
+    height: 26px; background: var(--surface); border-top: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 12px; font-size: 10px; color: var(--text-dim);
+    flex-shrink: 0; gap: 16px;
+}
+.sb-item { display: flex; align-items: center; gap: 4px; }
+
+/* ========== Toast ========== */
+.toast {
+    position: fixed; top: 60px; right: 20px; z-index: 9999;
+    padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    color: white; animation: toastIn 0.3s ease; pointer-events: none;
+}
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+.toast.info { background: var(--info); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========== Custom Node Content ========== */
+.litegraph .content { color: var(--text) !important; }
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+    #sidebar { width: 0; overflow: hidden; }
+}
+</style>
+</head>
+<body>
+
+<!-- ========== HEADER ========== -->
+<div id="header">
+    <div class="h-left">
+        <span style="font-size:18px;">🔧</span>
+        <span class="h-title">工作流编排器</span>
+        <span class="h-badge">v4.0 LiteGraph</span>
+    </div>
+    <div class="h-right">
+        <button class="btn btn-a" onclick="runWorkflow()" title="执行当前工作流">▶ 执行</button>
+        <button class="btn" onclick="exportWorkflow()" title="导出为JSON文件">📥 导出</button>
+        <button class="btn" onclick="importWorkflow()" title="从JSON文件导入">📤 导入</button>
+        <button class="btn" onclick="clearCanvas()" title="清空画布">🗑 清空</button>
+        <button class="btn btn-s" onclick="saveToLocal()" title="保存到本地存储">💾 保存</button>
+        <button class="btn btn-w" onclick="loadFromLocal()" title="从本地存储加载">📂 加载</button>
+        <span style="font-size:11px;color:var(--text-dim);margin-left:8px;">
+            <span class="h-dot on"></span>LiteGraph.js
+        </span>
+    </div>
+</div>
+
+<!-- ========== BODY ========== -->
+<div id="body-wrap">
+    <!-- SIDEBAR: 拖拽节点模板 -->
+    <div id="sidebar">
+        <div class="s-group">
+            <div class="s-group-label">⚡ 触发器</div>
+            <div class="node-tpl" draggable="true" data-node="trigger/timer" data-emoji="⏰">
+                <span class="nt-icon">⏰</span><div class="nt-info"><div class="nt-name">定时触发</div><div class="nt-desc">按Cron表达式定时执行</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="trigger/webhook" data-emoji="🪝">
+                <span class="nt-icon">🪝</span><div class="nt-info"><div class="nt-name">Webhook触发</div><div class="nt-desc">HTTP回调触发工作流</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="trigger/manual" data-emoji="👆">
+                <span class="nt-icon">👆</span><div class="nt-info"><div class="nt-name">手动触发</div><div class="nt-desc">点击按钮手动执行</div></div>
+            </div>
+        </div>
+        <div class="s-group">
+            <div class="s-group-label">✍️ 内容生产</div>
+            <div class="node-tpl" draggable="true" data-node="content/hot_topics" data-emoji="🔥">
+                <span class="nt-icon">🔥</span><div class="nt-info"><div class="nt-name">热点抓取</div><div class="nt-desc">抖音/微博/知乎/百度热搜</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="content/script_gen" data-emoji="📝">
+                <span class="nt-icon">📝</span><div class="nt-info"><div class="nt-name">AI脚本生成</div><div class="nt-desc">4平台差异化文案+合规检查</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="content/compliance" data-emoji="✅">
+                <span class="nt-icon">✅</span><div class="nt-info"><div class="nt-name">合规检查</div><div class="nt-desc">5平台违禁词+规则扫描</div></div>
+            </div>
+        </div>
+        <div class="s-group">
+            <div class="s-group-label">🎬 视频制作</div>
+            <div class="node-tpl" draggable="true" data-node="video/comfyui" data-emoji="🎨">
+                <span class="nt-icon">🎨</span><div class="nt-info"><div class="nt-name">ComfyUI渲染</div><div class="nt-desc">AI文生视频/图生视频</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="video/moneyprinter" data-emoji="🖨️">
+                <span class="nt-icon">🖨️</span><div class="nt-info"><div class="nt-name">MoneyPrinter</div><div class="nt-desc">AI批量生成短视频</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="video/remotion" data-emoji="🎞️">
+                <span class="nt-icon">🎞️</span><div class="nt-info"><div class="nt-name">Remotion动画</div><div class="nt-desc">程序化视频动画合成</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="video/ffmpeg" data-emoji="🔧">
+                <span class="nt-icon">🔧</span><div class="nt-info"><div class="nt-name">FFmpeg合成</div><div class="nt-desc">应急兜底+视频剪辑</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="video/cut" data-emoji="✂️">
+                <span class="nt-icon">✂️</span><div class="nt-info"><div class="nt-name">剪映数字人</div><div class="nt-desc">pyautogui全自动操控</div></div>
+            </div>
+        </div>
+        <div class="s-group">
+            <div class="s-group-label">📤 多平台发布</div>
+            <div class="node-tpl" draggable="true" data-node="publish/douyin" data-emoji="🎵">
+                <span class="nt-icon">🎵</span><div class="nt-info"><div class="nt-name">抖音发布</div><div class="nt-desc">Playwright自动上传发布</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="publish/xiaohongshu" data-emoji="📕">
+                <span class="nt-icon">📕</span><div class="nt-info"><div class="nt-name">小红书发布</div><div class="nt-desc">笔记上传+标签设置</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="publish/bilibili" data-emoji="📺">
+                <span class="nt-icon">📺</span><div class="nt-info"><div class="nt-name">B站发布</div><div class="nt-desc">视频投稿+分区设置</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="publish/weixin" data-emoji="💬">
+                <span class="nt-icon">💬</span><div class="nt-info"><div class="nt-name">视频号发布</div><div class="nt-desc">微信视频号上传</div></div>
+            </div>
+        </div>
+        <div class="s-group">
+            <div class="s-group-label">📊 数据监控</div>
+            <div class="node-tpl" draggable="true" data-node="monitor/fetch" data-emoji="📡">
+                <span class="nt-icon">📡</span><div class="nt-info"><div class="nt-name">数据抓取</div><div class="nt-desc">播放/点赞/评论/完播率</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="monitor/push_analysis" data-emoji="📈">
+                <span class="nt-icon">📈</span><div class="nt-info"><div class="nt-name">推流分析</div><div class="nt-desc">推流指数+投流建议</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="monitor/comment_bot" data-emoji="💬">
+                <span class="nt-icon">💬</span><div class="nt-info"><div class="nt-name">评论监控</div><div class="nt-desc">关键词分析+回复草稿</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="monitor/report" data-emoji="📋">
+                <span class="nt-icon">📋</span><div class="nt-info"><div class="nt-name">日报生成</div><div class="nt-desc">每日复盘+Markdown报告</div></div>
+            </div>
+        </div>
+        <div class="s-group">
+            <div class="s-group-label">🔔 通知动作</div>
+            <div class="node-tpl" draggable="true" data-node="action/notify" data-emoji="🔔">
+                <span class="nt-icon">🔔</span><div class="nt-info"><div class="nt-name">通知推送</div><div class="nt-desc">企微/钉钉/飞书/邮件</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="action/log" data-emoji="📝">
+                <span class="nt-icon">📝</span><div class="nt-info"><div class="nt-name">日志记录</div><div class="nt-desc">写入执行日志文件</div></div>
+            </div>
+        </div>
+        <div class="s-group">
+            <div class="s-group-label">🔀 流程控制</div>
+            <div class="node-tpl" draggable="true" data-node="logic/condition" data-emoji="🔀">
+                <span class="nt-icon">🔀</span><div class="nt-info"><div class="nt-name">条件判断</div><div class="nt-desc">if/else分支路由</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="logic/delay" data-emoji="⏳">
+                <span class="nt-icon">⏳</span><div class="nt-info"><div class="nt-name">延时等待</div><div class="nt-desc">暂停指定秒数后继续</div></div>
+            </div>
+            <div class="node-tpl" draggable="true" data-node="logic/loop" data-emoji="🔄">
+                <span class="nt-icon">🔄</span><div class="nt-info"><div class="nt-name">循环执行</div><div class="nt-desc">重复执行N次或条件循环</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div id="canvas-wrap"></div>
+</div>
+
+<!-- ========== STATUSBAR ========== -->
+<div id="statusbar">
+    <span class="sb-item" id="sb-node-count">🔘 节点: 0</span>
+    <span class="sb-item" id="sb-edge-count">🔗 连线: 0</span>
+    <span class="sb-item" id="sb-saved">💾 未保存</span>
+    <span style="margin-left:auto;font-size:10px;">ComfyUI同款引擎 | LiteGraph.js v0.7.18 | MIT</span>
+</div>
+
+<!-- ========== SCRIPTS ========== -->
+<script src="https://cdn.jsdelivr.net/npm/litegraph.js@0.7.18/build/litegraph.min.js"></script>
+<script>
+// ==================== 兜底：网络不可用时使用本地demo ====================
+if (typeof LiteGraph === 'undefined') {
+    document.getElementById('statusbar').innerHTML = 
+        '<span style="color:#ff4d4f;padding:6px 12px;font-size:12px;">⚠ LiteGraph.js CDN加载失败，请检查网络连接后刷新页面</span>';
+    throw new Error('LiteGraph.js not loaded');
+}
+
+// ==================== 自定义节点定义 ====================
+
+// 基类：短视频工作流节点
+function WBNodeBase() {
+    this.addOutput("下一步", LiteGraph.EVENT);
+    this.properties = {};
+    this.color = "#1e293b";
+    this.bgcolor = "#1e2a3a";
+}
+WBNodeBase.title = "WB Base";
+
+// ===== 触发器 =====
+
+function NodeTimer() {
+    WBNodeBase.call(this);
+    this.addInput("Cron表达式", "string");
+    this.title = "⏰ 定时触发";
+    this.desc = "按Cron表达式定时执行工作流";
+    this.properties.interval = "0 8 * * *";
+    this.color = "#2d3748";
+    this.bgcolor = "#1a202c";
+    this.boxcolor = "#667eea";
+}
+NodeTimer.prototype = Object.create(WBNodeBase.prototype);
+NodeTimer.prototype.onExecute = function() {
+    var cron = this.getInputData(0) || this.properties.interval;
+    this.setOutputData(0, { triggered: true, cron: cron, time: new Date().toISOString() });
+    this.triggerSlot(0);
+};
+
+function NodeWebhook() {
+    WBNodeBase.call(this);
+    this.addInput("Payload", "json");
+    this.title = "🪝 Webhook触发";
+    this.desc = "HTTP回调触发工作流";
+    this.properties.url = "/webhook/trigger";
+    this.color = "#2d3748";
+    this.bgcolor = "#1a202c";
+    this.boxcolor = "#50c878";
+}
+NodeWebhook.prototype = Object.create(WBNodeBase.prototype);
+NodeWebhook.prototype.onExecute = function() {
+    var payload = this.getInputData(0) || {};
+    this.setOutputData(0, { triggered: true, payload: payload });
+    this.triggerSlot(0);
+};
+
+function NodeManual() {
+    WBNodeBase.call(this);
+    this.addInput("参数", "json");
+    this.title = "👆 手动触发";
+    this.desc = "点击按钮手动执行";
+    this.color = "#2d3748";
+    this.bgcolor = "#1a202c";
+    this.boxcolor = "#faad14";
+}
+NodeManual.prototype = Object.create(WBNodeBase.prototype);
+NodeManual.prototype.onExecute = function() {
+    var param = this.getInputData(0) || { manual: true };
+    this.setOutputData(0, { triggered: true, param: param });
+    this.triggerSlot(0);
+};
+
+// ===== 内容生产 =====
+
+function NodeHotTopics() {
+    WBNodeBase.call(this);
+    this.addOutput("热点数据", "json");
+    this.title = "🔥 热点抓取";
+    this.desc = "抓取抖音/微博/知乎/百度热搜";
+    this.properties.platforms = "douyin,weibo,zhihu,baidu";
+    this.properties.topN = 10;
+    this.color = "#3d2e1e";
+    this.bgcolor = "#2a1e12";
+    this.boxcolor = "#ff6b35";
+}
+NodeHotTopics.prototype = Object.create(WBNodeBase.prototype);
+NodeHotTopics.prototype.onExecute = function() {
+    this.setOutputData(0, {
+        platforms: this.properties.platforms,
+        topics: this.properties.topN,
+        fetched: true,
+        timestamp: new Date().toISOString()
+    });
+    this.triggerSlot(0);
+};
+
+function NodeScriptGen() {
+    WBNodeBase.call(this);
+    this.addInput("热点/产品信息", "json");
+    this.addOutput("脚本内容", "json");
+    this.title = "📝 AI脚本生成";
+    this.desc = "4平台差异化文案+合规自检";
+    this.properties.targetPlatform = "douyin";
+    this.properties.product = "";
+    this.properties.tone = "professional";
+    this.color = "#2d2e1e";
+    this.bgcolor = "#1e1f14";
+    this.boxcolor = "#4ecdc4";
+}
+NodeScriptGen.prototype = Object.create(WBNodeBase.prototype);
+NodeScriptGen.prototype.onExecute = function() {
+    var input = this.getInputData(0) || {};
+    this.setOutputData(0, {
+        platform: this.properties.targetPlatform,
+        script: "【生成中...】基于输入" + JSON.stringify(input).substring(0, 50),
+        compliance_check: true,
+        generated: true,
+        module: ["痛点引入", "产品卖点", "信任背书", "促单话术"]
+    });
+    this.triggerSlot(0);
+};
+
+function NodeCompliance() {
+    WBNodeBase.call(this);
+    this.addInput("文案内容", "string");
+    this.addOutput("检查结果", "json");
+    this.addOutput("违规", "boolean");
+    this.title = "✅ 合规检查";
+    this.desc = "5平台违禁词+规则库扫描";
+    this.properties.maxRules = 100;
+    this.color = "#2e2d1e";
+    this.bgcolor = "#1f1e14";
+    this.boxcolor = "#52c41a";
+}
+NodeCompliance.prototype = Object.create(WBNodeBase.prototype);
+NodeCompliance.prototype.onExecute = function() {
+    var text = this.getInputData(0) || "";
+    var hasViolation = text.includes("最") || text.includes("第一");
+    this.setOutputData(0, { passed: !hasViolation, violations_found: hasViolation ? 1 : 0 });
+    this.setOutputData(1, hasViolation);
+    this.triggerSlot(0);
+};
+
+// ===== 视频制作 =====
+
+function NodeComfyUI() {
+    WBNodeBase.call(this);
+    this.addInput("脚本/提示词", "json");
+    this.addOutput("视频文件", "string");
+    this.title = "🎨 ComfyUI渲染";
+    this.desc = "AI文生视频/图生视频（via :8300）";
+    this.properties.apiUrl = "http://localhost:8300/api/engines/comfyui/generate";
+    this.properties.model = "svd";
+    this.color = "#2e1e3d";
+    this.bgcolor = "#1e142a";
+    this.boxcolor = "#764ba2";
+}
+NodeComfyUI.prototype = Object.create(WBNodeBase.prototype);
+NodeComfyUI.prototype.onExecute = function() {
+    var input = this.getInputData(0) || {};
+    this.setOutputData(0, "D:\\WB_Workflow\\final_videos\\" + Date.now() + "_comfyui.mp4");
+    this.triggerSlot(0);
+};
+
+function NodeMoneyPrinter() {
+    WBNodeBase.call(this);
+    this.addInput("文案JSON", "json");
+    this.addOutput("视频文件", "string");
+    this.title = "🖨️ MoneyPrinter";
+    this.desc = "AI批量生成短视频";
+    this.color = "#2e1e3d";
+    this.bgcolor = "#1e142a";
+    this.boxcolor = "#1890ff";
+}
+NodeMoneyPrinter.prototype = Object.create(WBNodeBase.prototype);
+NodeMoneyPrinter.prototype.onExecute = function() {
+    this.setOutputData(0, "D:\\WB_Workflow\\final_videos\\" + Date.now() + "_mp.mp4");
+    this.triggerSlot(0);
+};
+
+function NodeRemotion() {
+    WBNodeBase.call(this);
+    this.addInput("视频参数", "json");
+    this.addOutput("视频文件", "string");
+    this.title = "🎞️ Remotion动画";
+    this.desc = "程序化视频动画合成（via :8300）";
+    this.color = "#2e1e3d";
+    this.bgcolor = "#1e142a";
+    this.boxcolor = "#ff0072";
+}
+NodeRemotion.prototype = Object.create(WBNodeBase.prototype);
+NodeRemotion.prototype.onExecute = function() {
+    this.setOutputData(0, "D:\\WB_Workflow\\final_videos\\" + Date.now() + "_remotion.mp4");
+    this.triggerSlot(0);
+};
+
+function NodeFFmpeg() {
+    WBNodeBase.call(this);
+    this.addInput("视频片段列表", "json");
+    this.addOutput("合成视频", "string");
+    this.title = "🔧 FFmpeg合成";
+    this.desc = "应急兜底+视频剪辑拼接";
+    this.color = "#2e1e3d";
+    this.bgcolor = "#1e142a";
+    this.boxcolor = "#ff4d4f";
+}
+NodeFFmpeg.prototype = Object.create(WBNodeBase.prototype);
+NodeFFmpeg.prototype.onExecute = function() {
+    this.setOutputData(0, "D:\\WB_Workflow\\final_videos\\" + Date.now() + "_ffmpeg.mp4");
+    this.triggerSlot(0);
+};
+
+function NodeCut() {
+    WBNodeBase.call(this);
+    this.addInput("文案/素材", "json");
+    this.addOutput("输出视频", "string");
+    this.title = "✂️ 剪映数字人";
+    this.desc = "pyautogui全自动操控剪映";
+    this.color = "#2e1e3d";
+    this.bgcolor = "#1e142a";
+    this.boxcolor = "#52c41a";
+}
+NodeCut.prototype = Object.create(WBNodeBase.prototype);
+NodeCut.prototype.onExecute = function() {
+    this.setOutputData(0, "D:\\WB_Workflow\\final_videos\\" + Date.now() + "_cut.mp4");
+    this.triggerSlot(0);
+};
+
+// ===== 多平台发布 =====
+
+function nodePublishFactory(name, emoji, desc, platformCode) {
+    var NodeClass = function() {
+        WBNodeBase.call(this);
+        this.addInput("视频路径", "string");
+        this.addInput("标题文案", "string");
+        this.addOutput("发布结果", "json");
+        this.title = emoji + " " + name;
+        this.desc = desc;
+        this.properties.platform = platformCode;
+        this.color = "#1e3d2d";
+        this.bgcolor = "#142a1e";
+        this.boxcolor = "#52c41a";
+    };
+    NodeClass.prototype = Object.create(WBNodeBase.prototype);
+    NodeClass.prototype.onExecute = function() {
+        var videoPath = this.getInputData(0) || "";
+        var title = this.getInputData(1) || "默认标题";
+        this.setOutputData(0, {
+            platform: platformCode,
+            video: videoPath,
+            title: title,
+            status: "pending",
+            url: "https://" + platformCode + ".com/video/" + Date.now(),
+            publishedAt: new Date().toISOString()
+        });
+        this.triggerSlot(0);
+    };
+    return NodeClass;
+}
+
+// ===== 数据监控 =====
+
+function NodeFetch() {
+    WBNodeBase.call(this);
+    this.addInput("平台列表", "json");
+    this.addOutput("数据指标", "json");
+    this.title = "📡 数据抓取";
+    this.desc = "播放/点赞/评论/完播率/5s完播/2s跳出";
+    this.properties.platforms = "douyin,xiaohongshu,bilibili";
+    this.color = "#1e2e3d";
+    this.bgcolor = "#141e2a";
+    this.boxcolor = "#1890ff";
+}
+NodeFetch.prototype = Object.create(WBNodeBase.prototype);
+NodeFetch.prototype.onExecute = function() {
+    var platforms = this.getInputData(0) || { list: this.properties.platforms };
+    this.setOutputData(0, {
+        fetched: true,
+        timestamp: new Date().toISOString(),
+        metrics: {
+            douyin: { views: 0, likes: 0, comments: 0, completion_rate: 0, push_index: 0 },
+            xiaohongshu: { views: 0, likes: 0, comments: 0, completion_rate: 0, push_index: 0 },
+            bilibili: { views: 0, likes: 0, comments: 0, completion_rate: 0, push_index: 0 }
+        }
+    });
+    this.triggerSlot(0);
+};
+
+function NodePushAnalysis() {
+    WBNodeBase.call(this);
+    this.addInput("指标数据", "json");
+    this.addOutput("投流建议", "json");
+    this.addOutput("是否建议投流", "boolean");
+    this.title = "📈 推流分析";
+    this.desc = "推流指数计算+投流建议";
+    this.color = "#1e2e3d";
+    this.bgcolor = "#141e2a";
+    this.boxcolor = "#faad14";
+}
+NodePushAnalysis.prototype = Object.create(WBNodeBase.prototype);
+NodePushAnalysis.prototype.onExecute = function() {
+    var data = this.getInputData(0) || {};
+    var completionRate = 0.35;
+    var likeRate = 0.04;
+    var pushIndex = completionRate * 0.3 + likeRate * 0.7;
+    var suggestBoost = completionRate > 0.3 && likeRate > 0.03;
+    this.setOutputData(0, { push_index: pushIndex, suggest_boost: suggestBoost, detail: "完播率合格，建议投流" });
+    this.setOutputData(1, suggestBoost);
+    this.triggerSlot(0);
+};
+
+function NodeCommentBot() {
+    WBNodeBase.call(this);
+    this.addInput("评论列表", "json");
+    this.addOutput("回复草稿", "json");
+    this.addOutput("洞察报告", "json");
+    this.title = "💬 评论监控";
+    this.desc = "7类关键词分析+回复草稿生成";
+    this.color = "#1e2e3d";
+    this.bgcolor = "#141e2a";
+    this.boxcolor = "#4ecdc4";
+}
+NodeCommentBot.prototype = Object.create(WBNodeBase.prototype);
+NodeCommentBot.prototype.onExecute = function() {
+    var comments = this.getInputData(0) || [];
+    this.setOutputData(0, { replies: [], analyzed: true });
+    this.setOutputData(1, { sentiment: "positive", keywords: [], action_required: false });
+    this.triggerSlot(0);
+};
+
+function NodeReport() {
+    WBNodeBase.call(this);
+    this.addInput("全部数据", "json");
+    this.addOutput("报告路径", "string");
+    this.title = "📋 日报生成";
+    this.desc = "每日复盘+Markdown报告+多渠道推送";
+    this.color = "#1e2e3d";
+    this.bgcolor = "#141e2a";
+    this.boxcolor = "#cf1322";
+}
+NodeReport.prototype = Object.create(WBNodeBase.prototype);
+NodeReport.prototype.onExecute = function() {
+    var data = this.getInputData(0) || {};
+    this.setOutputData(0, "D:\\WB_Workflow\\reports\\daily_report_" + 
+        new Date().toISOString().replace(/[:.]/g, '-') + ".md");
+    this.triggerSlot(0);
+};
+
+// ===== 通知动作 =====
+
+function NodeNotify() {
+    WBNodeBase.call(this);
+    this.addInput("消息内容", "string");
+    this.addInput("渠道", "string");
+    this.addOutput("发送结果", "json");
+    this.title = "🔔 通知推送";
+    this.desc = "企微/钉钉/飞书/邮件多渠道推送";
+    this.properties.channels = "wecom,dingtalk,feishu";
+    this.color = "#3d1e2e";
+    this.bgcolor = "#2a141e";
+    this.boxcolor = "#eb2f96";
+}
+NodeNotify.prototype = Object.create(WBNodeBase.prototype);
+NodeNotify.prototype.onExecute = function() {
+    var msg = this.getInputData(0) || "";
+    var channel = this.getInputData(1) || this.properties.channels;
+    this.setOutputData(0, { sent: true, channels: channel, timestamp: new Date().toISOString() });
+    this.triggerSlot(0);
+};
+
+function NodeLog() {
+    WBNodeBase.call(this);
+    this.addInput("日志内容", "string");
+    this.addOutput("完成", "boolean");
+    this.title = "📝 日志记录";
+    this.desc = "写入执行日志到log文件";
+    this.color = "#3d1e2e";
+    this.bgcolor = "#2a141e";
+    this.boxcolor = "#888";
+}
+NodeLog.prototype = Object.create(WBNodeBase.prototype);
+NodeLog.prototype.onExecute = function() {
+    var content = this.getInputData(0) || "empty log";
+    console.log("[WorkflowLog]", content);
+    this.setOutputData(0, true);
+    this.triggerSlot(0);
+};
+
+// ===== 流程控制 =====
+
+function NodeCondition() {
+    WBNodeBase.call(this);
+    this.addInput("条件值", "boolean");
+    this.addOutput("True分支", LiteGraph.EVENT);
+    this.addOutput("False分支", LiteGraph.EVENT);
+    this.title = "🔀 条件判断";
+    this.desc = "if/else分支路由";
+    this.properties.conditionType = "boolean";
+    this.color = "#2e3d1e";
+    this.bgcolor = "#1e2a14";
+    this.boxcolor = "#faad14";
+}
+NodeCondition.prototype = Object.create(WBNodeBase.prototype);
+NodeCondition.prototype.onExecute = function() {
+    var condition = this.getInputData(0);
+    if (condition) {
+        this.triggerSlot(0, "True");
+    } else {
+        this.triggerSlot(1, "False");
+    }
+};
+
+function NodeDelay() {
+    WBNodeBase.call(this);
+    this.addInput("输入事件", LiteGraph.EVENT);
+    this.addOutput("输出事件", LiteGraph.EVENT);
+    this.title = "⏳ 延时等待";
+    this.desc = "暂停指定秒数后继续";
+    this.properties.waitSeconds = 5;
+    this.color = "#2e3d1e";
+    this.bgcolor = "#1e2a14";
+    this.boxcolor = "#1890ff";
+}
+NodeDelay.prototype = Object.create(WBNodeBase.prototype);
+NodeDelay.prototype.onExecute = function() {
+    setTimeout(() => {
+        this.triggerSlot(0);
+    }, (this.properties.waitSeconds || 5) * 1000);
+};
+
+function NodeLoop() {
+    WBNodeBase.call(this);
+    this.addInput("迭代数据", "json");
+    this.addOutput("单次循环", LiteGraph.EVENT);
+    this.addOutput("循环结束", LiteGraph.EVENT);
+    this.title = "🔄 循环执行";
+    this.desc = "重复执行N次或遍历数组";
+    this.properties.maxIter = 10;
+    this.color = "#2e3d1e";
+    this.bgcolor = "#1e2a14";
+    this.boxcolor = "#52c41a";
+}
+NodeLoop.prototype = Object.create(WBNodeBase.prototype);
+NodeLoop.prototype.onExecute = function() {
+    var data = this.getInputData(0);
+    var count = Array.isArray(data) ? data.length : (this.properties.maxIter || 10);
+    for (var i = 0; i < count && i < 10; i++) {
+        this.triggerSlot(0);
+    }
+    this.triggerSlot(1);
+};
+
+// ==================== 注册所有节点类型 ====================
+var nodeRegistry = {
+    // 触发器
+    'trigger/timer':        NodeTimer,
+    'trigger/webhook':      NodeWebhook,
+    'trigger/manual':       NodeManual,
+    // 内容生产
+    'content/hot_topics':   NodeHotTopics,
+    'content/script_gen':   NodeScriptGen,
+    'content/compliance':   NodeCompliance,
+    // 视频制作
+    'video/comfyui':        NodeComfyUI,
+    'video/moneyprinter':   NodeMoneyPrinter,
+    'video/remotion':       NodeRemotion,
+    'video/ffmpeg':         NodeFFmpeg,
+    'video/cut':            NodeCut,
+    // 多平台发布
+    'publish/douyin':       nodePublishFactory('抖音发布', '🎵', 'Playwright自动上传发布', 'douyin'),
+    'publish/xiaohongshu':  nodePublishFactory('小红书发布', '📕', '笔记上传+标签设置', 'xiaohongshu'),
+    'publish/bilibili':     nodePublishFactory('B站发布', '📺', '视频投稿+分区设置', 'bilibili'),
+    'publish/weixin':       nodePublishFactory('视频号发布', '💬', '微信视频号上传', 'weixin'),
+    // 数据监控
+    'monitor/fetch':        NodeFetch,
+    'monitor/push_analysis':NodePushAnalysis,
+    'monitor/comment_bot':  NodeCommentBot,
+    'monitor/report':       NodeReport,
+    // 通知动作
+    'action/notify':        NodeNotify,
+    'action/log':           NodeLog,
+    // 流程控制
+    'logic/condition':      NodeCondition,
+    'logic/delay':          NodeDelay,
+    'logic/loop':           NodeLoop,
+};
+
+Object.keys(nodeRegistry).forEach(function(type) {
+    LiteGraph.registerNodeType(type, nodeRegistry[type]);
+});
+
+// ==================== 创建画布 ====================
+var graph = new LGraph();
+var canvas;
+var isDraggingFromSidebar = false;
+
+// ==================== 自定义渲染：使节点显示emoji和中文标题 ====================
+var origDrawNodeShape = LGraphCanvas.prototype.drawNodeShape;
+LGraphCanvas.prototype.drawNodeShape = function(node, ctx, size, fgcolor, bgcolor, selected, mouseOver) {
+    // 先调用原始绘制（背景+基础形状）
+    origDrawNodeShape.apply(this, arguments);
+    
+    // 增强标题栏绘制
+    var titleHeight = LiteGraph.NODE_TITLE_HEIGHT;
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+    
+    // 标题背景渐变
+    var gradient = ctx.createLinearGradient(0, 0, size[0], 0);
+    var boxColor = node.boxcolor || node.color || '#667eea';
+    gradient.addColorStop(0, boxColor);
+    gradient.addColorStop(1, hexToRgba(boxColor, 0.6));
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, size[0], titleHeight, [8, 8, 0, 0]);
+    ctx.fill();
+    
+    // 标题文字
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    var title = node.title || '';
+    var maxWidth = size[0] - 20;
+    if (ctx.measureText(title).width > maxWidth) {
+        while (ctx.measureText(title + '...').width > maxWidth && title.length > 0) {
+            title = title.slice(0, -1);
+        }
+        title += '...';
+    }
+    ctx.fillText(title, 8, titleHeight / 2 + 1);
+    
+    // 底部描述文字
+    if (node.desc) {
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.font = '9px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif';
+        ctx.fillText(node.desc, 8, size[1] - 8);
+    }
+    
+    ctx.restore();
+};
+
+function hexToRgba(hex, alpha) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+// ==================== 初始化画布 ====================
+function initCanvas() {
+    canvas = new LGraphCanvas("#canvas-wrap", graph);
+    
+    // 设置画布背景
+    graph.start();
+    
+    // 添加默认示例节点
+    loadDemoWorkflow();
+    
+    // 更新状态栏
+    updateStatusBar();
+    
+    // 监听节点变化
+    graph.onNodeAdded = function() { updateStatusBar(); };
+    graph.onNodeRemoved = function() { updateStatusBar(); };
+    graph.onConnectionChange = function() { updateStatusBar(); };
+}
+
+// ==================== Demo工作流 ====================
+function loadDemoWorkflow() {
+    var timer = LiteGraph.createNode("trigger/timer");
+    timer.pos = [100, 150];
+    timer.properties.interval = "0 8 * * *";
+    graph.add(timer);
+
+    var topics = LiteGraph.createNode("content/hot_topics");
+    topics.pos = [400, 80];
+    graph.add(topics);
+
+    var script = LiteGraph.createNode("content/script_gen");
+    script.pos = [400, 280];
+    graph.add(script);
+
+    var comfyui = LiteGraph.createNode("video/comfyui");
+    comfyui.pos = [700, 80];
+    graph.add(comfyui);
+
+    var cut = LiteGraph.createNode("video/cut");
+    cut.pos = [700, 250];
+    graph.add(cut);
+
+    var douyin = LiteGraph.createNode("publish/douyin");
+    douyin.pos = [1000, 80];
+    graph.add(douyin);
+
+    var xhs = LiteGraph.createNode("publish/xiaohongshu");
+    xhs.pos = [1000, 250];
+    graph.add(xhs);
+
+    var fetch = LiteGraph.createNode("monitor/fetch");
+    fetch.pos = [1300, 80];
+    graph.add(fetch);
+
+    var push = LiteGraph.createNode("monitor/push_analysis");
+    push.pos = [1300, 250];
+    graph.add(push);
+
+    var report = LiteGraph.createNode("monitor/report");
+    report.pos = [1600, 150];
+    graph.add(report);
+
+    var notify = LiteGraph.createNode("action/notify");
+    notify.pos = [1900, 150];
+    graph.add(notify);
+
+    // 连线
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 2, origin_slot: 0, target_id: 3, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 2, origin_slot: 0, target_id: 4, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 3, origin_slot: 0, target_id: 5, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 4, origin_slot: 0, target_id: 6, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 6, origin_slot: 0, target_id: 8, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 5, origin_slot: 0, target_id: 7, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 7, origin_slot: 0, target_id: 9, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 8, origin_slot: 0, target_id: 9, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 9, origin_slot: 0, target_id: 10, target_slot: 0 });
+    graph.addConnection({ type: LiteGraph.EVENT, origin_id: 10, origin_slot: 0, target_id: 11, target_slot: 0 });
+
+    // 自动适配视图
+    setTimeout(function() {
+        if (canvas) canvas.fitCamera();
+    }, 200);
+}
+
+// ==================== 状态栏更新 ====================
+function updateStatusBar() {
+    var nodes = graph._nodes || [];
+    var edges = graph._links || [];
+    document.getElementById('sb-node-count').textContent = '🔘 节点: ' + nodes.length;
+    document.getElementById('sb-edge-count').textContent = '🔗 连线: ' + edges.length;
+}
+
+// ==================== 拖拽添加节点（侧边栏 → 画布） ====================
+var sidebarItems = document.querySelectorAll('.node-tpl');
+
+sidebarItems.forEach(function(item) {
+    item.addEventListener('dragstart', function(e) {
+        isDraggingFromSidebar = true;
+        var nodeType = this.getAttribute('data-node');
+        e.dataTransfer.setData('text/plain', nodeType);
+        e.dataTransfer.effectAllowed = 'copy';
+        this.classList.add('dragging');
+    });
+
+    item.addEventListener('dragend', function(e) {
+        isDraggingFromSidebar = false;
+        this.classList.remove('dragging');
+    });
+});
+
+// 画布区域接受拖放
+var canvasWrap = document.getElementById('canvas-wrap');
+canvasWrap.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+});
+
+canvasWrap.addEventListener('drop', function(e) {
+    e.preventDefault();
+    var nodeType = e.dataTransfer.getData('text/plain');
+    if (!nodeType) return;
+
+    // 获取画布内的坐标
+    var rect = canvasWrap.getBoundingClientRect();
+    var x = e.clientX - rect.left;
+    var y = e.clientY - rect.top;
+
+    // 转换为画布坐标（考虑缩放和平移）
+    if (canvas && canvas.ds) {
+        x = (x - canvas.ds.offset[0]) / canvas.ds.scale;
+        y = (y - canvas.ds.offset[1]) / canvas.ds.scale;
+    }
+
+    // 创建节点
+    var node = LiteGraph.createNode(nodeType);
+    if (node) {
+        node.pos = [Math.round(x), Math.round(y)];
+        graph.add(node);
+        graph.setDirtyCanvas(true, true);
+        updateStatusBar();
+        showToast('✅ 已添加节点: ' + (node.title || nodeType), 'success');
+    } else {
+        showToast('❌ 节点类型不存在: ' + nodeType, 'error');
+    }
+});
+
+// ==================== Toast 提示 ====================
+function showToast(msg, type) {
+    var toast = document.createElement('div');
+    toast.className = 'toast ' + (type || 'info');
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 2000);
+}
+
+// ==================== 工具栏功能 ====================
+
+// 执行工作流
+function runWorkflow() {
+    graph.runStep();
+    showToast('▶ 工作流开始执行', 'info');
+    updateStatusBar();
+}
+
+// 导出JSON
+function exportWorkflow() {
+    var data = graph.serialize();
+    var jsonStr = JSON.stringify(data, null, 2);
+    var blob = new Blob([jsonStr], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'workflow_' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📥 工作流已导出', 'success');
+}
+
+// 导入JSON
+function importWorkflow() {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                var data = JSON.parse(ev.target.result);
+                // 清空并加载
+                graph.clear();
+                graph.configure(data);
+                graph.setDirtyCanvas(true, true);
+                updateStatusBar();
+                if (canvas) canvas.fitCamera();
+                showToast('📤 工作流已导入 (' + (graph._nodes || []).length + ' 个节点)', 'success');
+            } catch (err) {
+                showToast('❌ 导入失败: ' + err.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// 清空画布
+function clearCanvas() {
+    if (confirm('确定要清空整个画布吗？此操作不可撤销。')) {
+        graph.clear();
+        graph.setDirtyCanvas(true, true);
+        updateStatusBar();
+        document.getElementById('sb-saved').textContent = '💾 已清空';
+        showToast('🗑 画布已清空', 'info');
+    }
+}
+
+// 保存到本地存储
+function saveToLocal() {
+    var data = graph.serialize();
+    var key = 'workflow_editor_v4_save';
+    var saveData = {
+        workflow: data,
+        savedAt: new Date().toISOString(),
+        nodeCount: (graph._nodes || []).length,
+        edgeCount: (graph._links || []).length
+    };
+    localStorage.setItem(key, JSON.stringify(saveData));
+    document.getElementById('sb-saved').textContent = '💾 已保存 ' + new Date().toLocaleTimeString();
+    showToast('💾 已保存到本地存储', 'success');
+}
+
+// 从本地存储加载
+function loadFromLocal() {
+    var key = 'workflow_editor_v4_save';
+    var raw = localStorage.getItem(key);
+    if (!raw) {
+        showToast('📂 没有找到本地保存的工作流', 'info');
+        return;
+    }
+    try {
+        var saveData = JSON.parse(raw);
+        graph.clear();
+        graph.configure(saveData.workflow);
+        graph.setDirtyCanvas(true, true);
+        updateStatusBar();
+        if (canvas) canvas.fitCamera();
+        document.getElementById('sb-saved').textContent = '💾 已加载 (' + saveData.savedAt + ')';
+        showToast('📂 已加载工作流 (' + saveData.nodeCount + ' 个节点)', 'success');
+    } catch (err) {
+        showToast('❌ 加载失败: ' + err.message, 'error');
+    }
+}
+
+// ==================== 快捷键 ====================
+document.addEventListener('keydown', function(e) {
+    // Ctrl+S: 保存
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        saveToLocal();
+    }
+    // Ctrl+O: 加载
+    if (e.ctrlKey && e.key === 'o') {
+        e.preventDefault();
+        loadFromLocal();
+    }
+    // Delete: 删除选中节点
+    if (e.key === 'Delete' && canvas) {
+        var selected = canvas.selected_nodes;
+        if (selected && Object.keys(selected).length > 0) {
+            Object.keys(selected).forEach(function(id) {
+                var node = graph.getNodeById(parseInt(id));
+                if (node) graph.remove(node);
+            });
+            graph.setDirtyCanvas(true, true);
+            updateStatusBar();
+        }
+    }
+    // F: 适配视图
+    if (e.key === 'f' && !e.ctrlKey && !e.metaKey && canvas) {
+        canvas.fitCamera();
+    }
+});
+
+// ==================== 启动 ====================
+window.addEventListener('DOMContentLoaded', function() {
+    initCanvas();
+    showToast('🚀 LiteGraph.js 工作流编排器 v4.0 已就绪', 'success');
+});
+
+// ==================== 窗口大小调整 ====================
+window.addEventListener('resize', function() {
+    if (canvas) {
+        canvas.resize();
+        graph.setDirtyCanvas(true, true);
+    }
+});
+
+console.log('🟢 工作流编排器 v4.0 — LiteGraph.js (ComfyUI同款引擎) 已加载');
+console.log('  注册节点类型: ' + Object.keys(nodeRegistry).length + ' 种');
+console.log('  节点列表:', Object.keys(nodeRegistry).join(', '));
+</script>
+</body>
+</html>
