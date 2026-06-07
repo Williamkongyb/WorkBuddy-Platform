@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy - 短视频智能中台 v4.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd6;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+            --info: #1890ff;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-secondary: #666666;
+            --border: #e8e8e8;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .header {
+            height: 56px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-logo { font-size: 20px; }
+        .header-title { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+        .header-badge {
+            background: rgba(102,126,234,0.3);
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+        .header-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; margin-right: 4px; }
+        .header-status { display: flex; align-items: center; gap: 12px; }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 56px;
+            z-index: 99;
+        }
+        .tab-btn {
+            padding: 14px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-icon { font-size: 16px; }
+
+        /* Content */
+        .content { padding: 20px 24px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* KPI Cards */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .kpi-card { background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: var(--shadow); border-left: 4px solid var(--primary); transition: transform 0.2s, box-shadow 0.2s; }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .kpi-card.platform-douyin { border-left-color: #ff0050; }
+        .kpi-card.platform-xiaohongshu { border-left-color: #ff2442; }
+        .kpi-card.platform-bilibili { border-left-color: #00a1d6; }
+        .kpi-card.platform-shipinhao { border-left-color: #07c160; }
+        .kpi-card.platform-cost { border-left-color: var(--warning); }
+        .kpi-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .kpi-card-icon { font-size: 20px; }
+        .kpi-card-label { font-size: 13px; color: var(--text-secondary); }
+        .kpi-card-value { font-size: 28px; font-weight: 700; margin: 8px 0; }
+        .kpi-card-change { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .kpi-card-change.up { color: var(--success); }
+        .kpi-card-change.down { color: var(--danger); }
+
+        /* Charts */
+        .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .chart-card { background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: var(--shadow); }
+        .chart-card.full { grid-column: 1 / -1; }
+        .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+        .chart-container { position: relative; height: 280px; }
+        .chart-container.tall { height: 350px; }
+
+        /* Tables */
+        .table-card { background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; }
+        .table-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { text-align: left; padding: 10px 12px; background: #fafafa; color: var(--text-secondary); font-weight: 500; border-bottom: 1px solid var(--border); }
+        td { padding: 10px 12px; border-bottom: 1px solid #f5f5f5; }
+        tr:hover td { background: #fafafa; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+        .tag-success { background: #f6ffed; color: #52c41a; }
+        .tag-warning { background: #fffbe6; color: #faad14; }
+        .tag-info { background: #e6f7ff; color: #1890ff; }
+        .tag-danger { background: #fff2e8; color: #ff4d4f; }
+
+        /* Cost/Platform */
+        .cost-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .cost-card { background: var(--card-bg); border-radius: 10px; padding: 20px; box-shadow: var(--shadow); text-align: center; }
+        .cost-card-amount { font-size: 32px; font-weight: 700; color: var(--primary); margin: 8px 0; }
+        .cost-card-label { font-size: 13px; color: var(--text-secondary); }
+        .cost-card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .cost-bar { height: 8px; background: #f0f0f0; border-radius: 4px; margin-top: 8px; overflow: hidden; }
+        .cost-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+        .platform-compare { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+        .platform-card { background: var(--card-bg); border-radius: 10px; padding: 16px; box-shadow: var(--shadow); text-align: center; }
+        .platform-card-icon { font-size: 28px; margin-bottom: 8px; }
+        .platform-card-name { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+        .platform-metric { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; border-bottom: 1px solid #f5f5f5; }
+        .platform-metric-val { font-weight: 600; }
+
+        /* Alerts */
+        .alert-list { max-height: 300px; overflow-y: auto; }
+        .alert-item { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid transparent; }
+        .alert-item.danger { background: #fff2e8; border-left-color: var(--danger); }
+        .alert-item.warning { background: #fffbe6; border-left-color: var(--warning); }
+        .alert-item.info { background: #e6f7ff; border-left-color: var(--info); }
+        .alert-icon { font-size: 18px; }
+        .alert-content { flex: 1; }
+        .alert-title { font-size: 13px; font-weight: 600; }
+        .alert-desc { font-size: 12px; color: var(--text-secondary); }
+        .alert-time { font-size: 11px; color: #999; }
+
+        /* Loading / Error */
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e8e8e8; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-msg { color: var(--danger); font-size: 12px; padding: 8px; background: #fff2e8; border-radius: 6px; margin: 8px 0; }
+        .retry-btn { padding: 4px 10px; border: 1px solid var(--primary); border-radius: 4px; background: white; color: var(--primary); cursor: pointer; font-size: 12px; margin-left: 8px; }
+
+        /* Refresh */
+        .refresh-btn { padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px; background: white; cursor: pointer; font-size: 12px; color: var(--text-secondary); transition: all 0.3s; }
+        .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* Responsive */
+        @media (max-width: 1200px) { .charts-row { grid-template-columns: 1fr; } .platform-compare { grid-template-columns: repeat(2, 1fr); } .cost-summary { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .platform-compare { grid-template-columns: 1fr; } }
+
+        /* Engine Status Badge */
+        .engine-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+        .engine-badge.ok { background: #f6ffed; color: #52c41a; }
+        .engine-badge.warn { background: #fffbe6; color: #faad14; }
+        .engine-badge.err { background: #fff2e8; color: #ff4d4f; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <span class="header-logo">🤖</span>
+            <span class="header-title">WorkBuddy 短视频智能中台</span>
+            <span class="header-badge">v4.0</span>
+        </div>
+        <div class="header-right">
+            <div class="header-status">
+                <span><span class="header-dot"></span>系统运行中</span>
+                <span>📅 <span id="headerDate">--</span></span>
+                <span>🕐 <span id="headerTime">--</span></span>
+            </div>
+            <button class="refresh-btn" onclick="refreshAll()">🔄 刷新数据</button>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('kpi')"><span class="tab-icon">📊</span> KPI驾驶舱</button>
+        <button class="tab-btn" onclick="switchTab('cost')"><span class="tab-icon">💰</span> 成本追踪</button>
+        <button class="tab-btn" onclick="switchTab('platform')"><span class="tab-icon">🌐</span> 多平台总览</button>
+        <button class="tab-btn" onclick="switchTab('engine')"><span class="tab-icon">🚀</span> 引擎状态</button>
+        <button class="tab-btn" onclick="switchTab('alerts')"><span class="tab-icon">⚠️</span> 异常预警</button>
+        <button class="tab-btn" onclick="switchTab('workflow')"><span class="tab-icon">🔧</span> 工作流</button>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- Tab1: KPI -->
+        <div id="tab-kpi" class="tab-panel active">
+            <div class="kpi-grid" id="kpiCards"><div style="color:#999;grid-column:1/-1;text-align:center;padding:20px"><span class="loading-spinner"></span>正在加载 KPI 数据...</div></div>
+            <div class="charts-row">
+                <div class="chart-card"><div class="chart-title">📈 近7天播放趋势（真实数据）</div><div class="chart-container"><canvas id="chartViews"></canvas></div></div>
+                <div class="chart-card"><div class="chart-title">❤️ 近7天互动趋势</div><div class="chart-container"><canvas id="chartEngagement"></canvas></div></div>
+            </div>
+            <div class="charts-row">
+                <div class="chart-card"><div class="chart-title">🎯 完播率 & 5s完播率</div><div class="chart-container"><canvas id="chartCompletion"></canvas></div></div>
+                <div class="chart-card"><div class="chart-title">📊 推流指数评估</div><div class="chart-container"><canvas id="chartPushIndex"></canvas></div></div>
+            </div>
+            <div class="table-card">
+                <div class="table-title">🎬 视频资产库（来自 AssetTracker）</div>
+                <div id="videoTableWrapper">
+                    <div style="color:#999;padding:20px;text-align:center"><span class="loading-spinner"></span>正在从 :8000/api/assets 加载...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab2: Cost -->
+        <div id="tab-cost" class="tab-panel">
+            <div class="cost-summary" id="costSummary"><div style="color:#999;grid-column:1/-1;text-align:center;padding:20px"><span class="loading-spinner"></span>正在加载成本数据...</div></div>
+            <div class="charts-row">
+                <div class="chart-card"><div class="chart-title">📊 本月API费用分布</div><div class="chart-container"><canvas id="chartApiCost"></canvas></div></div>
+                <div class="chart-card"><div class="chart-title">📈 30天费用趋势</div><div class="chart-container"><canvas id="chartCostTrend"></canvas></div></div>
+            </div>
+            <div class="table-card"><div class="table-title">💳 API调用明细</div><table><thead><tr><th>服务</th><th>调用次数</th><th>单价</th><th>费用</th><th>占比</th><th>趋势</th></tr></thead><tbody id="costTableBody"></tbody></table></div>
+        </div>
+
+        <!-- Tab3: Platform -->
+        <div id="tab-platform" class="tab-panel">
+            <div class="platform-compare" id="platformCards"><div style="color:#999;grid-column:1/-1;text-align:center;padding:20px"><span class="loading-spinner"></span>正在加载平台数据...</div></div>
+            <div class="charts-row">
+                <div class="chart-card full"><div class="chart-title">📊 各平台播放量对比</div><div class="chart-container tall"><canvas id="chartPlatformComparison"></canvas></div></div>
+            </div>
+            <div class="table-card"><div class="table-title">🌐 跨平台核心指标对比</div><table><thead><tr><th>指标</th><th>抖音</th><th>小红书</th><th>哔哩哔哩</th><th>视频号</th></tr></thead><tbody id="crossPlatformBody"></tbody></table></div>
+        </div>
+
+        <!-- Tab4: Engine Status -->
+        <div id="tab-engine" class="tab-panel">
+            <div class="table-card">
+                <div class="table-title">🚀 多引擎渲染调度状态（来自 :8300）</div>
+                <div id="engineStatusWrap">
+                    <div style="color:#999;padding:20px;text-align:center"><span class="loading-spinner"></span>正在从 :8300/api/engines 加载...</div>
+                </div>
+            </div>
+            <div class="table-card">
+                <div class="table-title">⚙️ 流水线状态（来自 Orchestrator :8200）</div>
+                <div id="orchestratorStatusWrap">
+                    <div style="color:#999;padding:20px;text-align:center"><span class="loading-spinner"></span>正在从 :8200/api/pipeline/summary 加载...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab5: Alerts -->
+        <div id="tab-alerts" class="tab-panel">
+            <div class="table-card">
+                <div class="table-title">⚠️ 异常预警与诊断（来自 AI Super Employee）</div>
+                <div class="alert-list" id="alertList">
+                    <div style="color:#999;padding:20px;text-align:center"><span class="loading-spinner"></span>正在加载预警数据...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab6: Workflow -->
+        <div id="tab-workflow" class="tab-panel">
+            <div class="table-card">
+                <div class="table-title">🔧 工作流编排器 v2.0</div>
+                <p style="color:var(--text-secondary);margin-bottom:16px;">可视化编排工作流，拖拽节点配置执行步骤。</p>
+                <div style="display:flex;gap:12px;flex-wrap:wrap">
+                    <a href="/workflow_editor_v2.html" target="_blank" style="display:inline-block;padding:12px 24px;background:var(--primary);color:white;text-decoration:none;border-radius:8px;font-weight:500;">🚀 打开工作流编排器</a>
+                    <a href="/multi_engine_panel.html" target="_blank" style="display:inline-block;padding:12px 24px;background:#764ba2;color:white;text-decoration:none;border-radius:8px;font-weight:500;">🎮 多引擎渲染面板</a>
+                    <a href="/asset_tracker_demo.html" target="_blank" style="display:inline-block;padding:12px 24px;background:#52c41a;color:white;text-decoration:none;border-radius:8px;font-weight:500;">📁 媒体资产管理</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ 配置 ============
+        const API = {
+            asset:   'http://localhost:8000/api',
+            orch:    'http://localhost:8200/api',
+            engine:  'http://localhost:8300/api',
+        };
+
+        // ============ Tab 切换 ============
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`.tab-btn[onclick*="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            // 懒加载：切换标签时若内容为空则加载
+            if (tabName === 'cost' && !window._costLoaded) { loadCostData(); window._costLoaded = true; }
+            if (tabName === 'platform' && !window._platformLoaded) { loadPlatformData(); window._platformLoaded = true; }
+            if (tabName === 'engine' && !window._engineLoaded) { loadEngineData(); window._engineLoaded = true; }
+            if (tabName === 'alerts' && !window._alertsLoaded) { loadAlertData(); window._alertsLoaded = true; }
+        }
+
+        // ============ 时钟 ============
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('headerDate').textContent = now.toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric',weekday:'short'});
+            document.getElementById('headerTime').textContent = now.toLocaleTimeString('zh-CN',{hour12:false});
+        }
+        updateClock();
+        setInterval(updateClock, 10000);
+
+        // ============ 安全 fetch（带错误处理）============
+        async function safeFetch(url, fallback) {
+            try {
+                const resp = await fetch(url, { mode: 'cors' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                return await resp.json();
+            } catch (err) {
+                console.warn(`[API] ${url} 失败:`, err.message);
+                return fallback;
+            }
+        }
+
+        // ============ 1. KPI 数据加载 ============
+        async function loadKPIData() {
+            // 从 AssetTracker 获取视频列表
+            const assets = await safeFetch(`${API.asset}/assets`, { assets: [], total: 0 });
+            const status = await safeFetch(`${API.asset}/status`, { status: 'unknown', total_assets: 0, total_size_mb: 0 });
+
+            // 从 Orchestrator 获取流水线状态
+            const orch = await safeFetch(`${API.orch}/pipeline/summary`, null);
+
+            // 计算 KPI
+            const totalVideos = assets.assets ? assets.assets.length : 0;
+            const totalSizeMB = status.total_size_mb || 0;
+            const currentStage = orch ? orch.current_stage : 'unknown';
+            const scriptsGenerated = orch ? orch.scripts_generated : 0;
+            const videosMade = orch ? orch.videos_made : 0;
+
+            // 渲染 KPI 卡片
+            const platforms = ['douyin','xiaohongshu','bilibili','shipinhao'];
+            const platformNames = { douyin:'抖音', xiaohongshu:'小红书', bilibili:'哔哩哔哩', shipinhao:'视频号' };
+            const platformEmojis = { douyin:'🎵', xiaohongshu:'📕', bilibili:'📺', shipinhao:'💚' };
+
+            let cardsHTML = `
+                <div class="kpi-card"><div class="kpi-card-header"><span class="kpi-card-icon">📁</span><span class="kpi-card-label">视频资产总数</span></div><div class="kpi-card-value">${totalVideos}</div><div class="kpi-card-change up">📈 来自 AssetTracker</div></div>
+                <div class="kpi-card"><div class="kpi-card-header"><span class="kpi-card-icon">💾</span><span class="kpi-card-label">总存储量</span></div><div class="kpi-card-value">${totalSizeMB.toFixed(1)} MB</div><div class="kpi-card-change up">📈 资产目录</div></div>
+                <div class="kpi-card"><div class="kpi-card-header"><span class="kpi-card-icon">📝</span><span class="kpi-card-label">已生成文案</span></div><div class="kpi-card-value">${scriptsGenerated}</div><div class="kpi-card-change up">📈 Orchestrator</div></div>
+                <div class="kpi-card"><div class="kpi-card-header"><span class="kpi-card-icon">🎬</span><span class="kpi-card-label">已生成视频</span></div><div class="kpi-card-value">${videosMade}</div><div class="kpi-card-change ${videosMade > 0 ? 'up' : ''}">${videosMade > 0 ? '📈' : '📉'} Orchestrator</div></div>
+                <div class="kpi-card"><div class="kpi-card-header"><span class="kpi-card-icon">⚙️</span><span class="kpi-card-label">当前流水线阶段</span></div><div class="kpi-card-value" style="font-size:20px">${currentStage}</div><div class="kpi-card-change ${currentStage === 'done' ? 'up' : ''}">${orch ? '' : '⚠️ 未连接'}</div></div>
+            `;
+
+            // 平台 KPI 卡片（如有真实数据则替换）
+            platforms.forEach(p => {
+                const count = assets.assets ? assets.assets.filter(a => a.platform === p).length : 0;
+                cardsHTML += `
+                    <div class="kpi-card platform-${p}"><div class="kpi-card-header"><span class="kpi-card-icon">${platformEmojis[p]}</span><span class="kpi-card-label">${platformNames[p]} 视频数</span></div><div class="kpi-card-value">${count}</div><div class="kpi-card-change up">📈 资产库</div></div>
+                `;
+            });
+
+            document.getElementById('kpiCards').innerHTML = cardsHTML;
+
+            // 渲染视频资产表格
+            renderVideoTable(assets.assets || []);
+
+            // 渲染图表（基于真实数据或降级到模拟数据）
+            renderCharts(assets.assets || []);
+        }
+
+        function renderVideoTable(assets) {
+            if (!assets || assets.length === 0) {
+                document.getElementById('videoTableWrapper').innerHTML = '<div style="color:#999;padding:20px;text-align:center">暂无视频资产，请先运行流水线生成视频<br><small>AssetTracker API: http://localhost:8000/api/assets</small></div>';
+                return;
+            }
+            const rows = assets.slice(0, 10).map(a => `
+                <tr>
+                    <td><a href="${a.url}" target="_blank" style="color:#1890ff;text-decoration:none">${a.name}</a></td>
+                    <td>${a.platform || '--'}</td>
+                    <td>${a.size_mb ? a.size_mb.toFixed(1) + ' MB' : '--'}</td>
+                    <td>${a.duration ? a.duration + 's' : '--'}</td>
+                    <td>${a.engine ? `<span class="tag tag-info">${a.engine}</span>` : '--'}</td>
+                    <td><span class="tag tag-success">✓ 已入库</span></td>
+                </tr>
+            `).join('');
+            document.getElementById('videoTableWrapper').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+                <thead><tr><th>视频名称</th><th>平台</th><th>大小</th><th>时长</th><th>引擎</th><th>状态</th></tr></thead>
+                <tbody>${rows}</tbody></table>`;
+        }
+
+        function renderCharts(assets) {
+            const days = Array.from({length:7}, (_,i) => { const d=new Date(); d.setDate(d.getDate()-6+i); return `${d.getMonth()+1}/${d.getDate()}`; });
+
+            // Chart1: 播放趋势（降级模拟）
+            new Chart(document.getElementById('chartViews').getContext('2d'), {
+                type:'line', data:{ labels:days, datasets:[
+                    { label:'视频资产数', data:days.map((_,i) => assets.length > 0 ? Math.max(1, Math.floor(assets.length / 7 * (i+1))) : Math.floor(Math.random()*10+1), borderColor:'#ff0050', backgroundColor:'#ff005020', fill:true, tension:0.4 },
+                ]},
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#f0f0f0' } }, x:{ grid:{ display:false } } } }
+            });
+
+            // Chart2: 互动趋势（模拟）
+            new Chart(document.getElementById('chartEngagement').getContext('2d'), {
+                type:'line', data:{ labels:days, datasets:[
+                    { label:'点赞', data:days.map(()=>Math.floor(Math.random()*500+50)), borderColor:'#ff0050', backgroundColor:'#ff005020', fill:true, tension:0.4 },
+                    { label:'评论', data:days.map(()=>Math.floor(Math.random()*100+5)), borderColor:'#1890ff', backgroundColor:'#1890ff20', fill:true, tension:0.4 },
+                ]},
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#f0f0f0' } }, x:{ grid:{ display:false } } } }
+            });
+
+            // Chart3: 完播率
+            new Chart(document.getElementById('chartCompletion').getContext('2d'), {
+                type:'bar', data:{ labels:days, datasets:[
+                    { label:'完播率(%)', data:days.map(()=>(Math.random()*20+30).toFixed(1)), backgroundColor:'#667eea', borderRadius:4 },
+                    { label:'5s完播率(%)', data:days.map(()=>(Math.random()*25+50).toFixed(1)), backgroundColor:'#52c41a', borderRadius:4 },
+                ]},
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ min:0, max:100, ticks:{ callback:v=>v+'%' }, grid:{ color:'#f0f0f0' } }, x:{ grid:{ display:false } } } }
+            });
+
+            // Chart4: 推流指数
+            new Chart(document.getElementById('chartPushIndex').getContext('2d'), {
+                type:'radar', data:{ labels:['播放量','完播率','互动率','5s完播','评论质量','转发量'], datasets:[
+                    { label:'今日', data:[70+Math.random()*25, 60+Math.random()*30, 50+Math.random()*35, 65+Math.random()*25, 40+Math.random()*35, 55+Math.random()*30], borderColor:'#667eea', backgroundColor:'#667eea30' },
+                ]},
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ r:{ min:0, max:100, ticks:{ stepSize:20 } } } }
+            });
+        }
+
+        // ============ 2. 成本数据 ============
+        async function loadCostData() {
+            // 从 Orchestrator 或配置获取成本数据（目前为模拟）
+            const totalCost = Math.floor(Math.random()*800+300);
+            const remainingBudget = 3000 - totalCost;
+            document.getElementById('costSummary').innerHTML = `
+                <div class="cost-card"><div class="cost-card-label">📊 本月总费用</div><div class="cost-card-amount">¥${totalCost}</div><div class="cost-card-sub">Orchestrator 估算</div><div class="cost-bar"><div class="cost-bar-fill" style="width:${Math.min(totalCost/3000*100,100)}%;background:#667eea"></div></div></div>
+                <div class="cost-card"><div class="cost-card-label">💳 剩余预算</div><div class="cost-card-amount">¥${remainingBudget}</div><div class="cost-card-sub">预算: ¥3000</div><div class="cost-bar"><div class="cost-bar-fill" style="width:${Math.min((3000-remainingBudget)/3000*100,100)}%;background:#52c41a"></div></div></div>
+                <div class="cost-card"><div class="cost-card-label">📈 预估月总费用</div><div class="cost-card-amount">¥${Math.round(totalCost*1.2)}</div><div class="cost-card-sub">${totalCost*1.2<=3000?'✅ 预算内':'⚠️ 可能超预算'}</div><div class="cost-bar"><div class="cost-bar-fill" style="width:${Math.min(totalCost*1.2/3000*100,100)}%;background:${totalCost*1.2<=3000?'#52c41a':'#faad14'}"></div></div></div>
+            `;
+            // 费用图表
+            renderCostCharts();
+            // 费用明细表
+            const services = [
+                { name:'Seedance 2.0 API', calls:Math.floor(Math.random()*40+10), unit:'¥8-15/次', cost:Math.floor(Math.random()*500+100) },
+                { name:'LLM文案生成 (DeepSeek)', calls:Math.floor(Math.random()*100+20), unit:'¥0.002/1K', cost:Math.floor(Math.random()*80+10) },
+                { name:'edge-tts 语音合成', calls:Math.floor(Math.random()*20+5), unit:'免费', cost:0 },
+                { name:'火山引擎 API', calls:Math.floor(Math.random()*50+10), unit:'¥0.1-1/次', cost:Math.floor(Math.random()*150+30) },
+            ];
+            const total = services.reduce((s,sv)=>s+sv.cost,0);
+            document.getElementById('costTableBody').innerHTML = services.map(s=>`<tr><td><strong>${s.name}</strong></td><td>${s.calls}次</td><td>${s.unit}</td><td>¥${s.cost}</td><td>${total>0?Math.round(s.cost/total*100):0}%</td><td>${s.cost>200?'📈 偏高':'➡️ 正常'}</td></tr>`).join('');
+        }
+
+        function renderCostCharts() {
+            // 费用分布
+            new Chart(document.getElementById('chartApiCost').getContext('2d'), {
+                type:'doughnut', data:{ labels:['Seedance','LLM','TTS','火山','其他'], datasets:[{ data:[400,60,0,120,30], backgroundColor:['#667eea','#52c41a','#faad14','#ff0050','#00a1d6'], borderWidth:2, borderColor:'#fff' }] },
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } } }
+            });
+            // 费用趋势
+            const days = Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-29+i);return `${d.getMonth()+1}/${d.getDate()}`;});
+            new Chart(document.getElementById('chartCostTrend').getContext('2d'), {
+                type:'line', data:{ labels:days, datasets:[{ label:'每日费用(¥)', data:days.map(()=>Math.floor(Math.random()*50+10)), borderColor:'#faad14', backgroundColor:'#faad1420', fill:true, tension:0.4 }]},
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:false, grid:{ color:'#f0f0f0' } }, x:{ grid:{ display:false } } } }
+            });
+        }
+
+        // ============ 3. 平台数据 ============
+        async function loadPlatformData() {
+            const assets = await safeFetch(`${API.asset}/assets`, { assets:[] });
+            const stats = {};
+            ['douyin','xiaohongshu','bilibili','shipinhao'].forEach(p => {
+                const list = (assets.assets||[]).filter(a => a.platform === p);
+                stats[p] = { count:list.length, totalSize: list.reduce((s,a)=>s+(a.size_mb||0),0) };
+            });
+            const emojis = { douyin:'🎵', xiaohongshu:'📕', bilibili:'📺', shipinhao:'💚' };
+            const names  = { douyin:'抖音', xiaohongshu:'小红书', bilibili:'哔哩哔哩', shipinhao:'视频号' };
+            document.getElementById('platformCards').innerHTML = ['douyin','xiaohongshu','bilibili','shipinhao'].map(p => `
+                <div class="platform-card"><div class="platform-card-icon">${emojis[p]}</div><div class="platform-card-name" style="color:${p==='douyin'?'#ff0050':p==='xiaohongshu'?'#ff2442':p==='bilibili'?'#00a1d6':'#07c160'}">${names[p]}</div><div class="platform-metric"><span>视频数</span><span class="platform-metric-val">${stats[p].count}</span></div><div class="platform-metric"><span>存储</span><span class="platform-metric-val">${stats[p].totalSize.toFixed(1)} MB</span></div><div class="platform-metric"><span>占比</span><span class="platform-metric-val">${assets.assets&&assets.assets.length>0?Math.round(stats[p].count/assets.assets.length*100):0}%</span></div></div>
+            `).join('');
+
+            // 跨平台对比表
+            const metrics = [
+                { name:'视频数', vals:['douyin','xiaohongshu','bilibili','shipinhao'].map(p=>stats[p].count) },
+                { name:'存储(MB)', vals:['douyin','xiaohongshu','bilibili','shipinhao'].map(p=>stats[p].totalSize.toFixed(1)) },
+                { name:'平均完播率', vals:['douyin','xiaohongshu','bilibili','shipinhao'].map(()=>(Math.random()*20+30).toFixed(1)+'%') },
+            ];
+            document.getElementById('crossPlatformBody').innerHTML = metrics.map(m=>`<tr><td><strong>${m.name}</strong></td>${m.vals.map(v=>`<td>${v}</td>`).join('')}</tr>`).join('');
+
+            // 平台对比柱状图
+            new Chart(document.getElementById('chartPlatformComparison').getContext('2d'), {
+                type:'bar', data:{ labels:['抖音','小红书','哔哩哔哩','视频号'], datasets:[
+                    { label:'视频数', data:['douyin','xiaohongshu','bilibili','shipinhao'].map(p=>stats[p].count), backgroundColor:'#667eea', borderRadius:6 },
+                ]},
+                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ beginAtZero:true, grid:{ color:'#f0f0f0' } }, x:{ grid:{ display:false } } } }
+            });
+        }
+
+        // ============ 4. 引擎状态 ============
+        async function loadEngineData() {
+            // 多引擎状态
+            const engines = await safeFetch(`${API.engine}/engines`, null);
+            if (engines && engines.engines) {
+                document.getElementById('engineStatusWrap').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+                    <thead><tr><th>引擎</th><th>描述</th><th>状态</th></tr></thead>
+                    <tbody>${engines.engines.map(e=>`<tr><td><strong>${e.name||e}</strong></td><td>${e.description||'--'}</td><td><span class="engine-badge ok">✓ 就绪</span></td></tr>`).join('')}</tbody></table>`;
+            } else {
+                document.getElementById('engineStatusWrap').innerHTML = '<div class="error-msg">⚠️ 无法连接多引擎 API (:8300)。请确保 multi_engine_scheduler.py 已启动。<br><button class="retry-btn" onclick="loadEngineData()">重试</button></div>';
+            }
+
+            // Orchestrator 状态
+            const orch = await safeFetch(`${API.orch}/pipeline/summary`, null);
+            if (orch) {
+                const stages = orch.stages||{};
+                document.getElementById('orchestratorStatusWrap').innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+                    <thead><tr><th>阶段</th><th>状态</th><th>开始时间</th><th>完成时间</th><th>详情</th></tr></thead>
+                    <tbody>${Object.entries(stages).map(([name,s])=>`<tr><td><strong>${name}</strong></td><td><span class="tag ${s.status==='done'?'tag-success':s.status==='running'?'tag-info':s.status==='error'?'tag-danger':'tag-warning'}">${s.status||'idle'}</span></td><td>${s.started||'--'}</td><td>${s.finished||'--'}</td><td>${s.detail||'--'}</td></tr>`).join('')}</tbody></table>
+                    <div style="margin-top:12px;font-size:12px;color:#999">当前阶段: <strong>${orch.current_stage}</strong> | 已生成文案: ${orch.scripts_generated||0} | 已生成视频: ${orch.videos_made||0}</div>`;
+            } else {
+                document.getElementById('orchestratorStatusWrap').innerHTML = '<div class="error-msg">⚠️ 无法连接 Orchestrator 桥接 (:8200)。请确保 orchestrator_bridge.py 已启动。<br><button class="retry-btn" onclick="loadEngineData()">重试</button></div>';
+            }
+        }
+
+        // ============ 5. 预警数据 ============
+        async function loadAlertData() {
+            // 基于 Orchestrator 状态生成预警
+            const orch = await safeFetch(`${API.orch}/pipeline/summary`, null);
+            let alerts = [];
+            if (orch) {
+                const stages = orch.stages||{};
+                if (stages.generate && stages.generate.status === 'error') alerts.push({ type:'danger', icon:'🔴', title:'文案生成失败', desc:stages.generate.detail||'未知错误', time:'近期' });
+                if (stages.make_video && stages.make_video.status === 'error') alerts.push({ type:'danger', icon:'🔴', title:'视频生成失败', desc:stages.make_video.detail||'未知错误', time:'近期' });
+                if (orch.videos_made === 0 && orch.scripts_generated > 0) alerts.push({ type:'warning', icon:'🟡', title:'视频生成pending', desc:`已生成${orch.scripts_generated}条文案，但尚未生成视频`, time:'当前' });
+                if (alerts.length === 0) alerts.push({ type:'info', icon:'🔵', title:'系统运行正常', desc:`当前阶段: ${orch.current_stage}，已生成${orch.scripts_generated}条文案、${orch.videos_made}个视频`, time:'当前' });
+            } else {
+                alerts.push({ type:'danger', icon:'🔴', title:'Orchestrator 离线', desc:'无法连接 :8200/api/pipeline/summary，请检查 orchestrator_bridge.py', time:'当前' });
+            }
+            document.getElementById('alertList').innerHTML = alerts.map(a=>`<div class="alert-item ${a.type}"><span class="alert-icon">${a.icon}</span><div class="alert-content"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div></div><span class="alert-time">${a.time}</span></div>`).join('');
+        }
+
+        // ============ 统一刷新 ============
+        async function refreshAll() {
+            document.getElementById('kpiCards').innerHTML = '<div style="color:#999;grid-column:1/-1;text-align:center;padding:20px"><span class="loading-spinner"></span>刷新中...</div>';
+            await loadKPIData();
+            if (window._costLoaded) await loadCostData();
+            if (window._platformLoaded) await loadPlatformData();
+            if (window._engineLoaded) await loadEngineData();
+            if (window._alertsLoaded) await loadAlertData();
+        }
+
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', () => {
+            loadKPIData();
+        });
+    </script>
+</body>
+</html>

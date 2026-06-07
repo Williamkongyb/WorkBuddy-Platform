@@ -1,0 +1,22 @@
+{
+  "name": "workbuddy-remotion",
+  "version": "1.0.0",
+  "description": "WorkBuddy Remotion \u4ee3\u7801\u5316\u89c6\u9891\u6a21\u677f",
+  "scripts": {
+    "start": "remotion studio",
+    "build": "remotion render src/index.tsx out/video.mp4",
+    "build:batch": "tsx src/batch_render.ts"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "remotion": "^4.0.0",
+    "@remotion/cli": "^4.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "@types/react": "^18.2.0",
+    "@react-types/react": "17.0.0"
+  }
+}

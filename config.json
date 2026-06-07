@@ -1,0 +1,440 @@
+{
+  "_config_version": "1.0.0",
+  "_description": "短视频全自动带货 v3.2 全局配置文件 — 修改此文件无需改代码即可调整参数",
+  "_last_modified": "2026-05-27",
+
+  "// ────── 全局路径 ──────": "",
+  "paths": {
+    "work_dir": "D:/WB_Workflow",
+    "scripts_dir": "D:/WB_Workflow/scripts",
+    "final_videos_dir": "D:/WB_Workflow/final_videos",
+    "bgm_dir": "D:/WB_Workflow/bgm",
+    "logs_dir": "D:/WB_Workflow/logs",
+    "screenshots_dir": "D:/WB_Workflow/logs/screenshots",
+    "browser_data_dir": "D:/WB_Workflow/browser_data",
+    "temp_seedance_dir": "D:/WB_Workflow/temp_seedance",
+    "frames_dir": "D:/WB_Workflow/temp_seedance/frames",
+    "tts_audio_dir": "D:/WB_Workflow/audio_segments",
+    "coordinate_file": "D:/WB_Workflow/jianying_coords.json",
+    "topics_cache": "D:/WB_Workflow/.topics_cache.json",
+    "publish_history": "D:/WB_Workflow/publish_history.json",
+    "make_video_log": "D:/WB_Workflow/2_make_video.log",
+    "seedance_log": "D:/WB_Workflow/2_make_video_seedance.log",
+    "publish_log": "D:/WB_Workflow/3_auto_publish.log",
+    "ffmpeg_path": "C:/Users/Confu/.workbuddy/binaries/ffmpeg/ffmpeg-8.1.1-essentials_build/bin",
+    "ffmpeg_exe": "C:/Users/Confu/.workbuddy/binaries/ffmpeg/ffmpeg-8.1.1-essentials_build/bin/ffmpeg.exe",
+    "ffprobe_exe": "C:/Users/Confu/.workbuddy/binaries/ffmpeg/ffmpeg-8.1.1-essentials_build/bin/ffprobe.exe"
+  },
+
+  "// ────── 平台合规规则库 ──────": "修改 platform_rules.txt 即时生效，无需重启",
+  "compliance": {
+    "rules_file": "D:/WB_Workflow/platform_rules.txt",
+    "enable_external_checker": true,
+    "external_checker_path": "C:/Users/Confu/.workbuddy/skills/短视频全自动带货/scripts",
+    "enable_builtin_rules": true,
+    "scoring": {
+      "red_line_penalty": -25,
+      "warning_penalty": -10,
+      "pass_threshold": 60
+    }
+  },
+
+  "// ────── 步骤1：智能文案生成 ──────": "",
+  "generate": {
+    "default_content_type": "product_selling",
+    "default_product": "",
+    "default_topic": "",
+    "default_platforms": ["douyin", "xiaohongshu", "shipinhao", "bilibili"],
+    "filename_max_length": 50,
+    "top_n_topics_per_category": 2,
+
+    "content_types": {
+      "product_selling": {
+        "name": "带货文案",
+        "emoji": "",
+        "description": "产品推广/好物推荐 — 4模块结构",
+        "modules": 4
+      },
+      "book_review": {
+        "name": "读书分享",
+        "emoji": "",
+        "description": "书籍推荐/书评/阅读感悟 — 3模块结构",
+        "modules": 3
+      },
+      "travel_guide": {
+        "name": "旅游攻略",
+        "emoji": "",
+        "description": "目的地推荐/旅行体验/攻略分享 — 3模块结构",
+        "modules": 3
+      },
+      "hot_news": {
+        "name": "热点新闻",
+        "emoji": "",
+        "description": "时事评论/热点解读/深度分析 — 3模块结构",
+        "modules": 3
+      },
+      "history": {
+        "name": "历史文化",
+        "emoji": "",
+        "description": "历史故事/文化解读/人文探讨 — 3模块结构",
+        "modules": 3
+      },
+      "geography": {
+        "name": "地理探索",
+        "emoji": "",
+        "description": "地理知识/自然奇观/地域文化 — 3模块结构",
+        "modules": 3
+      },
+      "economy_culture": {
+        "name": "经济文化",
+        "emoji": "",
+        "description": "经济现象/商业洞察/社会文化观察 — 3模块结构",
+        "modules": 3
+      }
+    },
+
+    "platform_profiles": {
+      "douyin": {
+        "name": "抖音",
+        "max_lines": 28,
+        "hook_style": "前3秒强钩子，直接戳痛点或抛悬念",
+        "tone": "口语化、节奏快、情绪饱满",
+        "cta": "左下方小黄车，赶紧去看看！",
+        "tags_prefix": "#",
+        "structure": [
+          ["pain_intro", "痛点引入：强钩子+痛点场景+情感共鸣（前3秒）"],
+          ["product_selling", "产品卖点：核心功能+使用场景+[商品卡片弹出]标志位"],
+          ["trust_building", "信任背书：销量数据+用户好评+品牌资质+试用对比"],
+          ["closing_pitch", "促单话术：限时优惠+紧迫感+小黄车引导+行动号召"]
+        ],
+        "card_prompt": "\n🎯 [画面提示：商品卡片弹出 — 显示产品主图+核心卖点+优惠价格]\n"
+      },
+      "xiaohongshu": {
+        "name": "小红书",
+        "max_lines": 32,
+        "hook_style": "真实体验分享口气，封面图+标题党克制",
+        "tone": "真诚分享、细节丰富、种草软性",
+        "cta": "主页有详细笔记，去看看吧～",
+        "tags_prefix": "#",
+        "structure": [
+          ["pain_intro", "痛点引入：真实体验引入+痛点共鸣+场景代入"],
+          ["product_selling", "产品卖点：细节展示+使用对比+[商品卡片弹出]标志位"],
+          ["trust_building", "信任背书：个人使用前后对比+长测感受+真实评价"],
+          ["closing_pitch", "促单话术：真诚推荐+适合人群+主页引导"]
+        ],
+        "card_prompt": "\n🎯 [画面提示：商品卡片弹出 — 显示产品细节图+使用场景+购买入口]\n"
+      },
+      "shipinhao": {
+        "name": "视频号",
+        "max_lines": 24,
+        "hook_style": "知识分享切入，提供价值感",
+        "tone": "专业但不生硬、有温度的知识分享",
+        "cta": "感兴趣的朋友可以点下方链接了解更多。",
+        "tags_prefix": "#",
+        "structure": [
+          ["pain_intro", "痛点引入：知识引入+行业问题分析+引发思考"],
+          ["product_selling", "产品卖点：关键技术指标+差异化优势+[商品卡片弹出]标志位"],
+          ["trust_building", "信任背书：品牌故事+资质认证+行业口碑+理性分析"],
+          ["closing_pitch", "促单话术：选购建议+避坑指南+理性消费引导"]
+        ],
+        "card_prompt": "\n🎯 [画面提示：商品卡片弹出 — 显示产品参数+认证标识+了解更多链接]\n"
+      },
+      "bilibili": {
+        "name": "哔哩哔哩",
+        "max_lines": 30,
+        "hook_style": "硬核科普/真实测评切入，Z世代语境，弹幕互动感强",
+        "tone": "真实测试、数据说话、不尬吹不硬广、弹幕梗融入",
+        "cta": "链接在评论区置顶，有需要的兄弟自取！",
+        "tags_prefix": "#",
+        "structure": [
+          ["pain_intro", "痛点引入：数据打脸+认知颠覆+弹幕互动开头"],
+          ["product_selling", "产品卖点：硬核拆解+参数实测+[商品卡片弹出]标志位"],
+          ["trust_building", "信任背书：真实对比数据+测试过程截图+观众反馈引用"],
+          ["closing_pitch", "促单话术：真诚总结+适合人群画像+评论区引导+三连暗示"]
+        ],
+        "card_prompt": "\n🎯 [画面提示：商品卡片弹出 — 显示实测数据+核心参数+限时优惠+购买链接码]\n"
+      }
+    },
+
+    "trust_data_gen": {
+      "sales_range": [10000, 500000],
+      "rating_min": 4.8,
+      "rating_max": 4.9,
+      "brand_years_range": [3, 15],
+      "review_count_range": [5000, 50000],
+      "certifications": ["ISO认证", "国家专利", "行业标准认证", "高新技术企业资质"],
+      "satisfaction_options": ["96%", "97%", "98%"],
+      "repurchase_options": ["35%", "40%", "45%"]
+    },
+
+    "urgency_templates": {
+      "days_range": [1, 3],
+      "stock_messages": ["库存不多了，先到先得！", "手慢无！这次真的不是套路。", "卖完这批不知道什么时候补货了。"],
+      "promo_options": ["运费险", "专属客服", "小赠品", "优惠券"],
+      "crowd_range": [100, 999]
+    },
+
+    "trending": {
+      "categories": {
+        "健康养生": ["夏季防晒", "久坐办公", "睡眠改善", "饮食调理", "运动康复"],
+        "智能数码": ["智能手表推荐", "降噪耳机横评", "手机配件", "智能家居", "充电宝"],
+        "家居生活": ["收纳整理", "厨房神器", "清洁好物", "居家办公", "灯具照明"],
+        "美妆护肤": ["防晒隔离", "控油定妆", "面膜精华", "男士护肤", "护发精油"],
+        "母婴亲子": ["宝宝防蚊", "育儿神器", "辅食工具", "早教玩具", "出行装备"],
+        "服饰穿搭": ["极简衣橱", "小个子穿搭", "通勤搭配", "换季穿搭", "配饰推荐"],
+        "食品饮料": ["办公室零食", "减脂饮品", "代餐推荐", "健康饮品", "方便速食"],
+        "运动户外": ["居家健身", "露营装备", "跑步装备", "瑜伽好物", "户外穿搭"],
+        "宠物用品": ["猫咪好物", "狗狗玩具", "宠物清洁", "宠物出行", "宠物保健"],
+        "个人护理": ["男士护肤", "牙齿美白", "护发推荐", "口腔护理", "身体护理"]
+      },
+      "scoring": {
+        "hot_topic_range": [75, 95],
+        "normal_topic_range": [60, 98],
+        "fallback_topic_range": [65, 85]
+      },
+      "fetch_timeout": 10
+    },
+
+    "fallback_topics": [
+      ["健康养生", "夏季防晒怎么选", "防晒霜/防晒衣/遮阳伞"],
+      ["健康养生", "久坐办公族的肩颈拯救计划", "按摩仪/人体工学椅/颈椎枕"],
+      ["智能数码", "2026年性价比智能手表横评", "智能手表/手环"],
+      ["智能数码", "无线降噪耳机选购避坑指南", "蓝牙耳机/降噪耳机"],
+      ["家居生活", "租房党必入的收纳神器", "收纳盒/置物架/压缩袋"],
+      ["家居生活", "厨房小白的省心神器", "空气炸锅/破壁机/料理机"],
+      ["美妆护肤", "夏天不脱妆的秘密", "定妆喷雾/散粉/持妆粉底"],
+      ["美妆护肤", "熬夜党的急救面膜推荐", "面膜/精华/眼霜"],
+      ["母婴亲子", "宝宝夏季防蚊全攻略", "防蚊液/蚊帐/止痒膏"],
+      ["母婴亲子", "新手爸妈育儿神器清单", "温奶器/婴儿监护器/背带"],
+      ["服饰穿搭", "一衣多穿的极简衣橱法则", "基础款T恤/衬衫/阔腿裤"],
+      ["服饰穿搭", "小个子穿出大长腿的秘诀", "高腰裤/短款上衣/厚底鞋"],
+      ["食品饮料", "办公室健康零食红黑榜", "坚果/代餐棒/无糖饮品"],
+      ["食品饮料", "减脂期也能喝的快乐水", "无糖茶/气泡水/植物奶"],
+      ["运动户外", "在家就能练的高效燃脂动作", "瑜伽垫/弹力带/哑铃"],
+      ["运动户外", "露营新手的装备避坑指南", "帐篷/睡袋/折叠桌椅"],
+      ["宠物用品", "猫咪主子的夏日降温神器", "冰垫/饮水机/梳毛器"],
+      ["宠物用品", "狗狗分离焦虑怎么办", "玩具/零食/安抚用品"],
+      ["个人护理", "男士护肤的正确步骤", "洗面奶/爽肤水/面霜"],
+      ["个人护理", "牙齿美白的正确打开方式", "电动牙刷/冲牙器/牙贴"]
+    ],
+
+    "bilibili_specific": {
+      "data_percent_range": [60, 90],
+      "purchase_trial_range": [3, 8],
+      "review_count_range": [10, 30],
+      "bad_reviews_percent_options": ["80%", "85%", "90%"],
+      "test_accuracy_range": [85, 99],
+      "test_gap_range": [5, 15],
+      "competitor_gap_range": [15, 40],
+      "competitor_price_range": [20, 100]
+    },
+
+    "sentence_diversity": {
+      "min_variations": 3,
+      "douyin_vs_intro": ["绝了", "必须安利", "这个是真的顶", "别划走"],
+      "enable_multi_style": true
+    }
+  },
+
+  "// ────── 步骤2：剪映数字人视频制作 ──────": "",
+  "make_video": {
+    "engine_type": "jianying",
+    "jianying": {
+      "exe_paths": [
+        "C:/Program Files/JianyingPro/JianyingPro.exe",
+        "C:/Program Files (x86)/JianyingPro/JianyingPro.exe",
+        "D:/Program Files/JianyingPro/JianyingPro.exe",
+        "C:/Users/Confu/AppData/Local/JianyingPro/JianyingPro.exe"
+      ],
+      "window_title": "剪映专业版",
+      "startup_wait": 15,
+      "window_search_timeout": 30
+    },
+    "automation": {
+      "failsafe_enabled": true,
+      "default_pause": 0.3,
+      "safety_zone_margin": 2,
+      "random_sleep_base": 0.5,
+      "random_sleep_jitter": 0.3,
+      "render_estimate_chars_per_sec": 5.0,
+      "render_check_interval": 5,
+      "zoom_min": 1.01,
+      "zoom_max": 1.03,
+      "sharpen_strength_pct": 5,
+      "subtitle_wait_seconds": 8,
+      "export_timeout_seconds": 300,
+      "bgm_volume_percent": 15,
+      "audio_offset_pixels": [0, 60, 120, 180, 240],
+      "drag_offset_x": 400,
+      "drag_offset_y": 250,
+      "export_resolution": "1080p",
+      "export_format": "mp4",
+      "watermark_text": "内容由AI生成",
+      "watermark_opacity_pct": 30
+    },
+    "default_coordinates": {
+      "jianying_shortcut": null,
+      "window_title": "剪映专业版",
+      "btn_start_create": [960, 540],
+      "btn_import": [640, 100],
+      "tab_digital_human": [80, 300],
+      "tab_text": [80, 400],
+      "tab_audio": [80, 500],
+      "tab_adjust": [80, 600],
+      "tab_filter": [80, 700],
+      "tab_sticker": [80, 800],
+      "btn_my_digital_human": [300, 250],
+      "digital_human_avatar": [200, 400],
+      "input_script_text": [960, 600],
+      "btn_generate_dh": [960, 750],
+      "timeline_area": [960, 850],
+      "first_track": [960, 820],
+      "preview_center": [960, 500],
+      "btn_new_text": [200, 150],
+      "text_input_area": [960, 540],
+      "text_props_opacity": [800, 650],
+      "text_props_opacity_30": [750, 650],
+      "btn_sharpen_filter": [400, 300],
+      "slider_sharpen": [800, 400],
+      "btn_zoom_scale": [960, 500],
+      "btn_smart_subtitle": [960, 200],
+      "btn_start_match": [960, 350],
+      "btn_music_lib": [300, 300],
+      "music_hot_list": [400, 450],
+      "slider_volume": [800, 700],
+      "slider_volume_15": [720, 700],
+      "btn_export": [1800, 80],
+      "export_resolution": [500, 400],
+      "export_res_1080p": [500, 450],
+      "export_format_mp4": [700, 400],
+      "btn_confirm_export": [960, 800],
+      "export_progress_bar": [960, 500],
+      "btn_close_panel": [1850, 50],
+      "btn_back": [50, 50]
+    }
+  },
+
+  "// ────── 步骤2备选：Seedance 2.0 API ──────": "",
+  "make_video_seedance": {
+    "api": {
+      "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+      "api_key": "",
+      "_api_key_comment": "留空则从环境变量 ARK_API_KEY 读取；也可直接填 key",
+      "rate_limit_wait_seconds": 3,
+      "max_retries": 3
+    },
+    "models": {
+      "standard": "doubao-seedance-2-0-260128",
+      "fast": "doubao-seedance-2-0-fast-260128",
+      "_standard_comment": "标准版，质量最高",
+      "_fast_comment": "快速版，速度更快价格更低"
+    },
+    "video": {
+      "duration": 15,
+      "ratio": "9:16",
+      "poll_interval_seconds": 5,
+      "poll_timeout_seconds": 600,
+      "default_ref_image": "D:/WB_Workflow/ref_image.jpg",
+      "chars_per_segment": 45,
+      "_size_comment": "dpi/fps 由 API 内部控制"
+    },
+    "tts": {
+      "enabled": true,
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "rate": "+5%",
+      "volume": "+0%",
+      "available_voices": {
+        "zh-CN-XiaoxiaoNeural": "晓晓（女，温柔，默认推荐）",
+        "zh-CN-YunxiNeural": "云希（男，磁性）",
+        "zh-CN-YunjianNeural": "云健（男，活力）",
+        "zh-CN-XiaoyiNeural": "晓伊（女，知性）",
+        "zh-CN-YunyangNeural": "云扬（男，新闻风）",
+        "zh-CN-XiaochenNeural": "晓辰（女，甜美）",
+        "zh-CN-XiaohanNeural": "晓涵（女，亲切）"
+      }
+    },
+    "dependencies": {
+      "required": ["requests", "opencv-python"],
+      "optional": ["edge-tts"]
+    }
+  },
+
+  "// ────── 步骤3：多平台自动发布 ──────": "",
+  "publish": {
+    "browser": {
+      "viewport_width": 1280,
+      "viewport_height": 900,
+      "locale": "zh-CN",
+      "safety_pause_seconds": 10,
+      "screenshot_on_action": true
+    },
+    "matching": {
+      "title_similarity_threshold": 0.3
+    },
+    "platforms": {
+      "douyin": {
+        "name": "抖音",
+        "enabled": true,
+        "creator_url": "https://creator.douyin.com/",
+        "upload_url": "https://creator.douyin.com/creator-micro/content/upload",
+        "login_timeout_seconds": 120,
+        "upload_timeout_seconds": 300,
+        "cookie_file": "douyin",
+        "logged_in_selectors": [".creator-header", ".avatar-wrapper", "[class*='user']"]
+      },
+      "xiaohongshu": {
+        "name": "小红书",
+        "enabled": true,
+        "creator_url": "https://creator.xiaohongshu.com/",
+        "upload_url": "https://creator.xiaohongshu.com/publish/publish",
+        "login_timeout_seconds": 120,
+        "upload_timeout_seconds": 300,
+        "cookie_file": "xiaohongshu",
+        "logged_in_selectors": [".user-info", ".avatar", "[class*='creator']"]
+      },
+      "bilibili": {
+        "name": "哔哩哔哩",
+        "enabled": true,
+        "creator_url": "https://member.bilibili.com/",
+        "upload_url": "https://member.bilibili.com/platform/upload/video/frame",
+        "login_timeout_seconds": 120,
+        "upload_timeout_seconds": 600,
+        "cookie_file": "bilibili",
+        "description_max_length": 500,
+        "max_tags": 10,
+        "logged_in_selectors": [".header-avatar", ".user-face", "[class*='login']"]
+      },
+      "shipinhao": {
+        "name": "视频号",
+        "enabled": false,
+        "creator_url": null,
+        "upload_url": null,
+        "note": "视频号仅支持移动端App发布，请使用 pyautogui_publisher.py 方案"
+      }
+    },
+    "skip_on_missing": ["shipinhao"]
+  },
+
+  "// ────── Dashboard / GUI ──────": "",
+  "dashboard": {
+    "enabled": true,
+    "web_port": 5888,
+    "web_url": "http://localhost:5888",
+    "theme": {
+      "default_mode": "system",
+      "default_color": "business-blue",
+      "available_colors": {
+        "business-blue": {"hex": "#2563eb", "name": "商务蓝"},
+        "tech-purple": {"hex": "#7c3aed", "name": "科技紫"},
+        "premium-gray": {"hex": "#4b5563", "name": "高级灰"}
+      }
+    },
+    "cta_button": {
+      "text": "开始全自动带货",
+      "color": "#22c55e",
+      "hover_color": "#16a34a",
+      "height": 52,
+      "font_size": 16
+    }
+  }
+}

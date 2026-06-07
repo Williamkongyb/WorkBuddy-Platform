@@ -1,0 +1,42 @@
+{
+  "running": false,
+  "current_stage": "generate",
+  "stages": {
+    "generate": {
+      "status": "done",
+      "started": "2026-05-27T17:51:26.314967",
+      "finished": "2026-05-27T17:51:28.473794",
+      "detail": "共 19 个文案"
+    },
+    "make_video": {
+      "status": "idle",
+      "started": null,
+      "finished": null,
+      "detail": ""
+    },
+    "publish": {
+      "status": "idle",
+      "started": null,
+      "finished": null,
+      "detail": ""
+    }
+  },
+  "config": {
+    "product": "智能手表",
+    "topic": null,
+    "platforms": [
+      "抖音",
+      "小红书",
+      "哔哩哔哩"
+    ],
+    "video_engine": "jianying",
+    "use_seedance": false,
+    "use_tts": true
+  },
+  "scripts_generated": 19,
+  "videos_made": 0,
+  "platforms_published": [],
+  "errors": [],
+  "started_at": "2026-05-27T14:55:05.024994",
+  "finished_at": "2026-05-27T14:55:05.040702"
+}

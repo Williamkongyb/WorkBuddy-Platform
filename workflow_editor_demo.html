@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy - 工作流编排器 Demo</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/reactflow@11/dist/reactflow.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/reactflow@11/dist/style.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; }
+        
+        .header {
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .header h1 { font-size: 20px; font-weight: 600; }
+        
+        .header-actions { display: flex; gap: 12px; }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-primary:hover { background: #f0f0f0; }
+        
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+        
+        .btn-success:hover { background: #73d13d; }
+        
+        .container { display: flex; height: calc(100vh - 60px); }
+        
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e8e8e8;
+            padding: 16px;
+            overflow-y: auto;
+        }
+        
+        .sidebar h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        
+        .node-template {
+            background: white;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: move;
+            transition: all 0.3s;
+        }
+        
+        .node-template:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        }
+        
+        .node-template-icon { font-size: 24px; margin-bottom: 4px; }
+        
+        .node-template-name { font-size: 14px; font-weight: 500; color: #333; }
+        
+        .node-template-desc { font-size: 12px; color: #999; margin-top: 4px; }
+        
+        .canvas { flex: 1; position: relative; }
+        
+        .status-bar {
+            height: 40px;
+            background: #fafafa;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .node-custom {
+            padding: 12px 16px;
+            border-radius: 8px;
+            min-width: 150px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: white;
+        }
+        
+        .node-custom-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .node-custom-icon { font-size: 20px; }
+        
+        .node-custom-title { font-size: 14px; font-weight: 600; }
+        
+        .node-custom-desc { font-size: 11px; color: #999; }
+        
+        .node-custom-status {
+            margin-top: 8px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            text-align: center;
+        }
+        
+        .status-ready { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .status-running { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; }
+        .status-success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .status-error { background: #fff2e8; color: #fa541c; border: 1px solid #ffbb96; }
+        
+        .template-card {
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .template-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+        }
+        
+        .template-name { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; }
+        
+        .template-desc { font-size: 12px; color: #999; }
+        
+        .execution-log {
+            position: absolute;
+            bottom: 60px;
+            right: 20px;
+            width: 400px;
+            max-height: 300px;
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 16px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .execution-log.show { display: block; }
+        
+        .log-item {
+            padding: 8px;
+            margin-bottom: 4px;
+            border-left: 3px solid #667eea;
+            background: #f8f9fa;
+            font-size: 12px;
+        }
+        
+        .log-time { color: #999; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useCallback, useRef } = React;
+        const { 
+            ReactFlow, 
+            Background, 
+            Controls, 
+            MiniMap,
+            addEdge,
+            useNodesState,
+            useEdgesState,
+            Handle,
+            Position
+        } = ReactFlow;
+
+        // 自定义节点组件
+        function CustomNode({ data, selected }) {
+            const statusColors = {
+                'ready': { border: '#e8e8e8', bg: '#f6ffed' },
+                'running': { border: '#91d5ff', bg: '#e6f7ff' },
+                'success': { border: '#b7eb8f', bg: '#f6ffed' },
+                'error': { border: '#ffbb96', bg: '#fff2e8' }
+            };
+            
+            const colors = statusColors[data.status] || statusColors['ready'];
+            
+            return (
+                <div className="node-custom" style={{
+                    border: `2px solid ${selected ? '#667eea' : colors.border}`,
+                    background: colors.bg
+                }}>
+                    <Handle type="target" position={Position.Top} />
+                    <div className="node-custom-header">
+                        <span className="node-custom-icon">{data.icon}</span>
+                        <span className="node-custom-title">{data.label}</span>
+                    </div>
+                    <div className="node-custom-desc">{data.description}</div>
+                    {data.status && (
+                        <div className={`node-custom-status status-${data.status}`}>
+                            {data.status === 'ready' && '等待执行'}
+                            {data.status === 'running' && '执行中...'}
+                            {data.status === 'success' && '✓ 执行成功'}
+                            {data.status === 'error' && '✗ 执行失败'}
+                        </div>
+                    )}
+                    <Handle type="source" position={Position.Bottom} />
+                </div>
+            );
+        }
+
+        // 主应用组件
+        function App() {
+            const [nodes, setNodes, onNodesChange] = useNodesState([
+                {
+                    id: '1',
+                    type: 'custom',
+                    position: { x: 100, y: 100 },
+                    data: { 
+                        label: '智能文案生成', 
+                        icon: '📝',
+                        description: '生成4平台差异化文案+合规自检',
+                        status: 'success'
+                    }
+                },
+                {
+                    id: '2',
+                    type: 'custom',
+                    position: { x: 350, y: 100 },
+                    data: { 
+                        label: '视频自动生成', 
+                        icon: '🎬',
+                        description: '剪映数字人/Seedance API',
+                        status: 'running'
+                    }
+                },
+                {
+                    id: '3',
+                    type: 'custom',
+                    position: { x: 600, y: 100 },
+                    data: { 
+                        label: '多平台发布', 
+                        icon: '📤',
+                        description: '抖音/小红书/B站自动发布',
+                        status: 'ready'
+                    }
+                },
+                {
+                    id: '4',
+                    type: 'custom',
+                    position: { x: 850, y: 100 },
+                    data: { 
+                        label: '数据监控', 
+                        icon: '📊',
+                        description: '推流指数+评论洞察',
+                        status: 'ready'
+                    }
+                }
+            ]);
+
+            const [edges, setEdges, onEdgesChange] = useEdgesState([
+                { id: 'e1-2', source: '1', target: '2', animated: true },
+                { id: 'e2-3', source: '2', target: '3' },
+                { id: 'e3-4', source: '3', target: '4' }
+            ]);
+
+            const [showLog, setShowLog] = useState(false);
+            const [executing, setExecuting] = useState(false);
+
+            const onConnect = useCallback(
+                (params) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
+                [setEdges]
+            );
+
+            const executeWorkflow = () => {
+                setExecuting(true);
+                setShowLog(true);
+                
+                // 模拟执行过程
+                const updateNodeStatus = (nodeId, status) => {
+                    setNodes(nds => nds.map(node => 
+                        node.id === nodeId ? { 
+                            ...node, 
+                            data: { ...node.data, status } 
+                        } : node
+                    ));
+                };
+
+                // 模拟执行
+                setTimeout(() => updateNodeStatus('1', 'running'), 500);
+                setTimeout(() => updateNodeStatus('1', 'success'), 1500);
+                setTimeout(() => updateNodeStatus('2', 'running'), 2000);
+                setTimeout(() => updateNodeStatus('2', 'success'), 3500);
+                setTimeout(() => updateNodeStatus('3', 'running'), 4000);
+                setTimeout(() => updateNodeStatus('3', 'success'), 5000);
+                setTimeout(() => updateNodeStatus('4', 'running'), 5500);
+                setTimeout(() => {
+                    updateNodeStatus('4', 'success');
+                    setExecuting(false);
+                }, 7000);
+            };
+
+            const nodeTypes = { custom: CustomNode };
+
+            return (
+                <div>
+                    <div className="header">
+                        <h1>🚀 WorkBuddy 工作流编排器</h1>
+                        <div className="header-actions">
+                            <button className="btn btn-primary" onClick={() => setShowLog(!showLog)}>
+                                {showLog ? '隐藏日志' : '查看日志'}
+                            </button>
+                            <button 
+                                className="btn btn-success" 
+                                onClick={executeWorkflow}
+                                disabled={executing}
+                            >
+                                {executing ? '⏳ 执行中...' : '▶ 执行工作流'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="container">
+                        <div className="sidebar">
+                            <h3>📦 节点模板</h3>
+                            <div className="node-template" style={{borderColor: '#52c41a'}}>
+                                <div className="node-template-icon">📝</div>
+                                <div className="node-template-name">智能文案生成</div>
+                                <div className="node-template-desc">生成4平台差异化文案+合规自检</div>
+                            </div>
+                            <div className="node-template" style={{borderColor: '#1890ff'}}>
+                                <div className="node-template-icon">🎬</div>
+                                <div className="node-template-name">视频自动生成</div>
+                                <div className="node-template-desc">剪映数字人/Seedance API</div>
+                            </div>
+                            <div className="node-template" style={{borderColor: '#faad14'}}>
+                                <div className="node-template-icon">📤</div>
+                                <div className="node-template-name">多平台发布</div>
+                                <div className="node-template-desc">抖音/小红书/B站自动发布</div>
+                            </div>
+                            <div className="node-template" style={{borderColor: '#722ed1'}}>
+                                <div className="node-template-icon">📊</div>
+                                <div className="node-template-name">数据监控</div>
+                                <div className="node-template-desc">推流指数+评论洞察</div>
+                            </div>
+
+                            <h3 style={{marginTop: '24px'}}>📋 预置模板</h3>
+                            <div className="template-card">
+                                <div className="template-name">短视频全自动带货</div>
+                                <div className="template-desc">热点抓取→文案生成→视频制作→自动发布→数据监控</div>
+                            </div>
+                            <div className="template-card">
+                                <div className="template-name">AI超级员工监控</div>
+                                <div className="template-desc">全维度数据抓取→异常预警→LLM诊断→每日复盘</div>
+                            </div>
+                        </div>
+
+                        <div className="canvas">
+                            <ReactFlow
+                                nodes={nodes}
+                                edges={edges}
+                                onNodesChange={onNodesChange}
+                                onEdgesChange={onEdgesChange}
+                                onConnect={onConnect}
+                                nodeTypes={nodeTypes}
+                                fitView
+                            >
+                                <Background />
+                                <Controls />
+                                <MiniMap />
+                            </ReactFlow>
+
+                            <div className={`execution-log ${showLog ? 'show' : ''}`}>
+                                <h4 style={{marginBottom: '12px'}}>📋 执行日志</h4>
+                                <div className="log-item">
+                                    <span className="log-time">10:25:01</span>
+                                    <span>工作流开始执行...</span>
+                                </div>
+                                <div className="log-item">
+                                    <span className="log-time">10:25:02</span>
+                                    <span>✓ 节点[智能文案生成] 执行成功</span>
+                                </div>
+                                <div className="log-item">
+                                    <span className="log-time">10:25:03</span>
+                                    <span>▶ 节点[视频自动生成] 开始执行...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="status-bar">
+                        <div>
+                            <span style={{marginRight: '16px'}}>节点数: {nodes.length}</span>
+                            <span style={{marginRight: '16px'}}>连接数: {edges.length}</span>
+                            <span>状态: {executing ? '执行中' : '就绪'}</span>
+                        </div>
+                        <div>
+                            WorkBuddy Web Dashboard v1.0 | 双击节点编辑 | 拖拽连线
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 渲染应用
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

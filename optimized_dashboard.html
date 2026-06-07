@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy 短视频智能中台 v4.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1890ff;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-light: #f0f2f5;
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* 顶部导航 */
+        .header {
+            height: 60px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), #36cfc9);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(90deg, var(--primary), #36cfc9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-btn {
+            padding: 6px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .header-btn:hover {
+            background: var(--bg-card);
+        }
+
+        .header-btn.primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            display: inline-block;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 主容器 */
+        .main-container {
+            margin-top: 60px;
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* 左侧菜单 */
+        .sidebar {
+            width: 220px;
+            background: var(--bg-dark);
+            border-right: 1px solid var(--border);
+            padding: 16px 0;
+            overflow-y: auto;
+        }
+
+        .menu-section {
+            margin-bottom: 24px;
+        }
+
+        .menu-title {
+            padding: 8px 24px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .menu-item {
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+            font-size: 14px;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-card);
+        }
+
+        .menu-item.active {
+            background: rgba(24, 144, 255, 0.1);
+            border-left-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .menu-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* 主内容区 */
+        .content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            background: var(--bg-dark);
+        }
+
+        /* 数据卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.up {
+            color: var(--success);
+        }
+
+        .stat-change.down {
+            color: var(--danger);
+        }
+
+        /* 工作流设计器 */
+        .workflow-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .workflow-canvas {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 24px;
+            min-height: 400px;
+            position: relative;
+            overflow: auto;
+        }
+
+        .workflow-node {
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            width: 200px;
+            position: absolute;
+            cursor: move;
+            transition: all 0.3s;
+        }
+
+        .workflow-node:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(24, 144, 255, 0.3);
+        }
+
+        .workflow-node.running {
+            border-color: var(--primary);
+            animation: glow 2s infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(24, 144, 255, 0.3); }
+            50% { box-shadow: 0 0 25px rgba(24, 144, 255, 0.6); }
+        }
+
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .node-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .node-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .node-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        .node-status.done {
+            background: rgba(82, 196, 26, 0.2);
+            color: var(--success);
+        }
+
+        .node-status.running {
+            background: rgba(24, 144, 255, 0.2);
+            color: var(--primary);
+        }
+
+        .node-status.pending {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .node-connector {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--border);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .node-connector:hover {
+            background: var(--primary);
+        }
+
+        .node-connector.right {
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .node-connector.left {
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* 连接线 */
+        .workflow-connection {
+            position: absolute;
+            height: 2px;
+            background: var(--primary);
+            opacity: 0.5;
+        }
+
+        /* 图表区 */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .chart-placeholder {
+            height: 200px;
+            background: var(--bg-dark);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 模拟图表 */
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 160px;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(180deg, var(--primary), #36cfc9);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .chart-bar:hover {
+            opacity: 0.8;
+        }
+
+        .chart-bar-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        /* 日志流 */
+        .log-stream {
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+        }
+
+        .log-info {
+            color: var(--primary);
+        }
+
+        .log-success {
+            color: var(--success);
+        }
+
+        .log-warning {
+            color: var(--warning);
+        }
+
+        .log-error {
+            color: var(--danger);
+        }
+
+        /* 表格 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background: var(--bg-dark);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-table tr:hover td {
+            background: rgba(24, 144, 255, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .badge.success {
+            background: rgba(82, 196, 26, 0.2);
+            color: var(--success);
+        }
+
+        .badge.warning {
+            background: rgba(250, 173, 20, 0.2);
+            color: var(--warning);
+        }
+
+        .badge.danger {
+            background: rgba(255, 77, 79, 0.2);
+            color: var(--danger);
+        }
+
+        /* 移动端预览 */
+        .mobile-preview {
+            width: 300px;
+            background: #000;
+            border-radius: 24px;
+            padding: 12px;
+            margin: 0 auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .mobile-screen {
+            background: #111;
+            border-radius: 16px;
+            padding: 16px;
+            color: #fff;
+        }
+
+        .mobile-notification {
+            background: #222;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">W</div>
+            <div class="logo-text">WorkBuddy 短视频智能中台 v4.0</div>
+        </div>
+        <div class="header-right">
+            <button class="header-btn">
+                <span class="status-dot"></span>
+                系统运行中
+            </button>
+            <button class="header-btn">📊 数据看板</button>
+            <button class="header-btn">⚙️ 设置</button>
+            <button class="header-btn primary">🚀 启动工作流</button>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 左侧菜单 -->
+        <div class="sidebar">
+            <div class="menu-section">
+                <div class="menu-title">核心功能</div>
+                <div class="menu-item active">
+                    <span class="menu-icon">📊</span>
+                    <span>数据驾驶舱</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">🔄</span>
+                    <span>工作流编排</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">🎬</span>
+                    <span>视频生成</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">📤</span>
+                    <span>多平台发布</span>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-title">智能分析</div>
+                <div class="menu-item">
+                    <span class="menu-icon">🤖</span>
+                    <span>AI超级员工</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">📈</span>
+                    <span>数据分析</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">⚠️</span>
+                    <span>异常预警</span>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-title">内容管理</div>
+                <div class="menu-item">
+                    <span class="menu-icon">📝</span>
+                    <span>文案库</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">🎥</span>
+                    <span>视频模板</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">📚</span>
+                    <span>素材管理</span>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-title">系统</div>
+                <div class="menu-item">
+                    <span class="menu-icon">💰</span>
+                    <span>成本追踪</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">🔔</span>
+                    <span>通知中心</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">📋</span>
+                    <span>执行日志</span>
+                </div>
+                <div class="menu-item">
+                    <span class="menu-icon">⚙️</span>
+                    <span>系统设置</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="content">
+            <!-- 数据卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">今日播放量</div>
+                        <div class="stat-icon" style="background: rgba(24, 144, 255, 0.2);">📺</div>
+                    </div>
+                    <div class="stat-value">128,456</div>
+                    <div class="stat-change up">↑ 12.5% vs 昨日</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">今日点赞数</div>
+                        <div class="stat-icon" style="background: rgba(250, 173, 20, 0.2);">❤️</div>
+                    </div>
+                    <div class="stat-value">8,932</div>
+                    <div class="stat-change up">↑ 8.3% vs 昨日</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">完播率</div>
+                        <div class="stat-icon" style="background: rgba(82, 196, 26, 0.2);">✅</div>
+                    </div>
+                    <div class="stat-value">42.3%</div>
+                    <div class="stat-change up">↑ 3.2% vs 昨日</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">推流指数</div>
+                        <div class="stat-icon" style="background: rgba(114, 46, 209, 0.2);">🚀</div>
+                    </div>
+                    <div class="stat-value">86.5</div>
+                    <div class="stat-change down">↓ 2.1% vs 昨日</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">API成本</div>
+                        <div class="stat-icon" style="background: rgba(255, 77, 79, 0.2);">💰</div>
+                    </div>
+                    <div class="stat-value">¥32.50</div>
+                    <div class="stat-change up">↑ ¥5.20 vs 昨日</div>
+                </div>
+            </div>
+
+            <!-- 工作流编排器 -->
+            <div class="workflow-section">
+                <div class="section-header">
+                    <div class="section-title">🔄 工作流编排器</div>
+                    <div>
+                        <button class="header-btn">+ 添加节点</button>
+                        <button class="header-btn primary">▶ 执行工作流</button>
+                    </div>
+                </div>
+                <div class="workflow-canvas" style="position: relative; min-height: 500px;">
+                        <!-- 节点1: 文案生成 -->
+                        <div class="workflow-node" style="left: 50px; top: 50px; border-color: var(--success);">
+                            <div class="node-header">
+                                <div class="node-icon" style="background: rgba(82, 196, 26, 0.2);">📝</div>
+                                <div class="node-title">智能文案生成</div>
+                                <div class="node-status done">✓ 完成</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                生成4平台差异化文案<br>
+                                合规自检: <span style="color: var(--success);">通过</span>
+                            </div>
+                            <div class="node-connector right"></div>
+                        </div>
+
+                        <!-- 连接线1 -->
+                        <svg style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;">
+                            <line x1="250" y1="100" x2="350" y2="100" stroke="#1890ff" stroke-width="2" stroke-dasharray="5,5"/>
+                        </svg>
+
+                        <!-- 节点2: 视频生成 -->
+                        <div class="workflow-node" style="left: 350px; top: 50px; border-color: var(--primary);">
+                            <div class="node-header">
+                                <div class="node-icon" style="background: rgba(24, 144, 255, 0.2);">🎬</div>
+                                <div class="node-title">视频自动生成</div>
+                                <div class="node-status running">● 执行中</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                剪映数字人渲染中...<br>
+                                进度: <span style="color: var(--primary);">65%</span>
+                            </div>
+                            <div class="node-connector left"></div>
+                            <div class="node-connector right"></div>
+                        </div>
+
+                        <!-- 连接线2 -->
+                        <svg style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;">
+                            <line x1="550" y1="100" x2="650" y2="100" stroke="#1890ff" stroke-width="2" stroke-dasharray="5,5"/>
+                        </svg>
+
+                        <!-- 节点3: 多平台发布 -->
+                        <div class="workflow-node" style="left: 650px; top: 50px; border-color: var(--warning);">
+                            <div class="node-header">
+                                <div class="node-icon" style="background: rgba(250, 173, 20, 0.2);">📤</div>
+                                <div class="node-title">多平台发布</div>
+                                <div class="node-status pending">⏳ 等待</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                抖音 | 小红书 | B站<br>
+                                发布时间: 10:00 AM
+                            </div>
+                            <div class="node-connector left"></div>
+                        </div>
+
+                        <!-- 节点4: 数据监控（下方） -->
+                        <div class="workflow-node" style="left: 350px; top: 250px; border-color: var(--success);">
+                            <div class="node-header">
+                                <div class="node-icon" style="background: rgba(114, 46, 209, 0.2);">📊</div>
+                                <div class="node-title">数据监控</div>
+                                <div class="node-status done">✓ 完成</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                推流指数: 86.5<br>
+                                异常预警: <span style="color: var(--success);">无</span>
+                            </div>
+                        </div>
+
+                        <!-- 连接线3 (从视频生成到数据监控) -->
+                        <svg style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;">
+                            <line x1="450" y1="170" x2="450" y2="250" stroke="#1890ff" stroke-width="2" stroke-dasharray="5,5"/>
+                        </svg>
+
+                        <!-- 节点5: AI超级员工（下方） -->
+                        <div class="workflow-node" style="left: 350px; top: 380px; border-color: rgba(114, 46, 209, 0.5);">
+                            <div class="node-header">
+                                <div class="node-icon" style="background: rgba(114, 46, 209, 0.2);">🤖</div>
+                                <div class="node-title">AI超级员工</div>
+                                <div class="node-status done">✓ 完成</div>
+                            </div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                深度复盘报告已生成<br>
+                                优化建议: 3条
+                            </div>
+                        </div>
+                    </div>
+            </div>
+
+            <!-- 图表区 -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="section-header">
+                        <div class="section-title">📈 近7天数据趋势</div>
+                    </div>
+                    <div class="chart-placeholder">
+                        <div class="chart-bars">
+                            <div class="chart-bar" style="height: 60%;">
+                                <div class="chart-bar-label">周一</div>
+                            </div>
+                            <div class="chart-bar" style="height: 75%;">
+                                <div class="chart-bar-label">周二</div>
+                            </div>
+                            <div class="chart-bar" style="height: 85%;">
+                                <div class="chart-bar-label">周三</div>
+                            </div>
+                            <div class="chart-bar" style="height: 70%;">
+                                <div class="chart-bar-label">周四</div>
+                            </div>
+                            <div class="chart-bar" style="height: 90%;">
+                                <div class="chart-bar-label">周五</div>
+                            </div>
+                            <div class="chart-bar" style="height: 65%;">
+                                <div class="chart-bar-label">周六</div>
+                            </div>
+                            <div class="chart-bar" style="height: 80%;">
+                                <div class="chart-bar-label">周日</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="section-header">
+                        <div class="section-title">💰 今日成本追踪</div>
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+                            <span style="color: var(--text-secondary);">GPT-4 文案生成</span>
+                            <span>¥8.50</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+                            <span style="color: var(--text-secondary);">Seedance API</span>
+                            <span>¥18.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+                            <span style="color: var(--text-secondary);">合规自检</span>
+                            <span>¥1.00</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px;">
+                            <span style="color: var(--text-secondary);">AI超级员工</span>
+                            <span>¥5.00</span>
+                        </div>
+                        <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
+                        <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold;">
+                            <span>合计</span>
+                            <span style="color: var(--warning);">¥32.50</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 执行日志 -->
+            <div class="workflow-section">
+                <div class="section-header">
+                    <div class="section-title">📋 实时执行日志</div>
+                    <button class="header-btn">清空日志</button>
+                </div>
+                <div class="log-stream">
+                    <div class="log-line">
+                        <span class="log-time">[09:35:12]</span>
+                        <span class="log-info"> [INFO] </span>
+                        <span>工作流编排器启动...</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:13]</span>
+                        <span class="log-info"> [INFO] </span>
+                        <span>加载配置文件: config.json</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:14]</span>
+                        <span class="log-success"> [SUCCESS] </span>
+                        <span>文案生成完成: 4平台差异化文案已输出</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:15]</span>
+                        <span class="log-info"> [INFO] </span>
+                        <span>合规自检: 5平台规则库加载成功</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:16]</span>
+                        <span class="log-success"> [SUCCESS] </span>
+                        <span>合规检查通过: 0个违禁词</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:20]</span>
+                        <span class="log-info"> [INFO] </span>
+                        <span>启动剪映数字人视频生成...</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:25]</span>
+                        <span class="log-info"> [INFO] </span>
+                        <span>视频渲染进度: 35%...</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:30]</span>
+                        <span class="log-info"> [INFO] </span>
+                        <span>视频渲染进度: 65%...</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:35]</span>
+                        <span class="log-warning"> [WARNING] </span>
+                        <span>检测到2s跳出率偏高: 68% (阈值65%)</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:40]</span>
+                        <span class="log-info"> [INFO] </span>
+                        <span>AI超级员工启动深度分析...</span>
+                    </div>
+                    <div class="log-line">
+                        <span class="log-time">[09:35:45]</span>
+                        <span class="log-success"> [SUCCESS] </span>
+                        <span>AI诊断完成: 建议优化开头3秒内容</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 平台数据表格 -->
+            <div class="workflow-section">
+                <div class="section-header">
+                    <div class="section-title">📱 多平台数据总览</div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>平台</th>
+                            <th>播放量</th>
+                            <th>点赞数</th>
+                            <th>评论数</th>
+                            <th>完播率</th>
+                            <th>推流指数</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>🎵 抖音</td>
+                            <td>85,230</td>
+                            <td>5,678</td>
+                            <td>432</td>
+                            <td>45.2%</td>
+                            <td>88.5</td>
+                            <td><span class="badge success">推荐中</span></td>
+                        </tr>
+                        <tr>
+                            <td>📕 小红书</td>
+                            <td>28,450</td>
+                            <td>2,345</td>
+                            <td>198</td>
+                            <td>38.7%</td>
+                            <td>82.3</td>
+                            <td><span class="badge success">推荐中</span></td>
+                        </tr>
+                        <tr>
+                            <td>📺 B站</td>
+                            <td>14,776</td>
+                            <td>909</td>
+                            <td>87</td>
+                            <td>42.8%</td>
+                            <td>79.8</td>
+                            <td><span class="badge warning">观察中</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 移动端监控预览 -->
+            <div class="workflow-section">
+                <div class="section-header">
+                    <div class="section-title">📱 移动端监控预览 (企微推送)</div>
+                </div>
+                <div class="mobile-preview">
+                    <div class="mobile-screen">
+                        <div style="font-size: 16px; font-weight: bold; margin-bottom: 16px; text-align: center;">
+                            WorkBuddy 监控中心
+                        </div>
+                        <div class="mobile-notification">
+                            <div style="font-size: 12px; color: #999; margin-bottom: 4px;">09:35 AM</div>
+                            <div style="font-size: 14px; margin-bottom: 4px;">📊 数据监控报告</div>
+                            <div style="font-size: 12px; color: #ccc;">
+                                今日播放: 128,456<br>
+                                完播率: 42.3%<br>
+                                推流指数: 86.5 ✅
+                            </div>
+                        </div>
+                        <div class="mobile-notification">
+                            <div style="font-size: 12px; color: #999; margin-bottom: 4px;">09:30 AM</div>
+                            <div style="font-size: 14px; margin-bottom: 4px;">⚠️ 异常预警</div>
+                            <div style="font-size: 12px; color: #ccc;">
+                                2s跳出率: 68% (偏高)<br>
+                                建议: 优化开头3秒
+                            </div>
+                        </div>
+                        <div class="mobile-notification">
+                            <div style="font-size: 12px; color: #999; margin-bottom: 4px;">09:00 AM</div>
+                            <div style="font-size: 14px; margin-bottom: 4px;">✅ 工作流执行完成</div>
+                            <div style="font-size: 12px; color: #ccc;">
+                                文案生成 ✓<br>
+                                视频渲染中 65%<br>
+                                发布排队中
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟实时数据更新
+        setInterval(() => {
+            const statValues = document.querySelectorAll('.stat-value');
+            if (statValues.length > 0) {
+                // 随机小幅波动播放量
+                const playCount = parseInt(statValues[0].textContent.replace(',', ''));
+                const newPlayCount = playCount + Math.floor(Math.random() * 100);
+                statValues[0].textContent = newPlayCount.toLocaleString();
+            }
+        }, 3000);
+
+        // 菜单切换
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 工作流节点点击
+        document.querySelectorAll('.workflow-node').forEach(node => {
+            node.addEventListener('click', function() {
+                document.querySelectorAll('.workflow-node').forEach(n => n.style.boxShadow = 'none');
+                this.style.boxShadow = '0 0 20px rgba(24, 144, 255, 0.5)';
+            });
+        });
+    </script>
+</body>
+</html>

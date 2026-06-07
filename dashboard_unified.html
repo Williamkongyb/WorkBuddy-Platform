@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy - 统一运营仪表盘 v3.2</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd6;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+            --info: #1890ff;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-secondary: #666666;
+            --border: #e8e8e8;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            height: 56px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-logo { font-size: 20px; }
+        .header-title { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+        .header-badge {
+            background: rgba(255,255,255,0.15);
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+        .header-right { display: flex; align-items: center; gap: 16px; font-size: 13px; }
+        .header-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+        /* Tab Navigation */
+        .tab-nav {
+            display: flex;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 56px;
+            z-index: 99;
+        }
+        .tab-btn {
+            padding: 14px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .tab-icon { font-size: 16px; }
+
+        /* Content */
+        .content { padding: 20px 24px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+        .kpi-card.platform-douyin { border-left-color: #ff0050; }
+        .kpi-card.platform-xiaohongshu { border-left-color: #ff2442; }
+        .kpi-card.platform-bilibili { border-left-color: #00a1d6; }
+        .kpi-card.platform-shipinhao { border-left-color: #07c160; }
+        .kpi-card.platform-cost { border-left-color: var(--warning); }
+        .kpi-card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .kpi-card-icon { font-size: 20px; }
+        .kpi-card-label { font-size: 13px; color: var(--text-secondary); }
+        .kpi-card-value { font-size: 28px; font-weight: 700; margin: 8px 0; }
+        .kpi-card-change {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .kpi-card-change.up { color: var(--success); }
+        .kpi-card-change.down { color: var(--danger); }
+
+        /* Charts */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+        .chart-card.full { grid-column: 1 / -1; }
+        .chart-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+        .chart-container { position: relative; height: 280px; }
+        .chart-container.tall { height: 350px; }
+
+        /* Tables */
+        .table-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+        .table-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            background: #fafafa;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        tr:hover td { background: #fafafa; }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .tag-success { background: #f6ffed; color: #52c41a; }
+        .tag-warning { background: #fffbe6; color: #faad14; }
+        .tag-info { background: #e6f7ff; color: #1890ff; }
+        .tag-danger { background: #fff2e8; color: #ff4d4f; }
+
+        /* Cost Summary */
+        .cost-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .cost-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        .cost-card-amount {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 8px 0;
+        }
+        .cost-card-label { font-size: 13px; color: var(--text-secondary); }
+        .cost-card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .cost-bar {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .cost-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        /* Platform Comparison */
+        .platform-compare {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .platform-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        .platform-card-icon { font-size: 28px; margin-bottom: 8px; }
+        .platform-card-name { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+        .platform-metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .platform-metric-val { font-weight: 600; }
+
+        /* Alerts */
+        .alert-list { max-height: 300px; overflow-y: auto; }
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid transparent;
+        }
+        .alert-item.danger {
+            background: #fff2e8;
+            border-left-color: var(--danger);
+        }
+        .alert-item.warning {
+            background: #fffbe6;
+            border-left-color: var(--warning);
+        }
+        .alert-item.info {
+            background: #e6f7ff;
+            border-left-color: var(--info);
+        }
+        .alert-icon { font-size: 18px; }
+        .alert-content { flex: 1; }
+        .alert-title { font-size: 13px; font-weight: 600; }
+        .alert-desc { font-size: 12px; color: var(--text-secondary); }
+        .alert-time { font-size: 11px; color: #999; }
+
+        /* Refresh Button */
+        .refresh-btn {
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: all 0.3s;
+        }
+        .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .charts-row { grid-template-columns: 1fr; }
+            .platform-compare { grid-template-columns: repeat(2, 1fr); }
+            .cost-summary { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .platform-compare { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <span class="header-logo">🤖</span>
+            <span class="header-title">WorkBuddy 运营仪表盘</span>
+            <span class="header-badge">v3.2</span>
+        </div>
+        <div class="header-right">
+            <span><span class="header-dot"></span>系统运行中</span>
+            <span>📅 <span id="headerDate">--</span></span>
+            <span>🕐 <span id="headerTime">--</span></span>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('kpi')">
+            <span class="tab-icon">📊</span> KPI驾驶舱
+        </button>
+        <button class="tab-btn" onclick="switchTab('cost')">
+            <span class="tab-icon">💰</span> 成本追踪
+        </button>
+        <button class="tab-btn" onclick="switchTab('platform')">
+            <span class="tab-icon">🌐</span> 多平台总览
+        </button>
+        <button class="tab-btn" onclick="switchTab('alerts')">
+            <span class="tab-icon">⚠️</span> 异常预警
+        </button>
+        <button class="tab-btn" onclick="switchTab('workflow')">
+            <span class="tab-icon">🔧</span> 工作流编排
+        </button>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <!-- Tab 1: KPI Dashboard -->
+        <div id="tab-kpi" class="tab-panel active">
+            <!-- KPI Cards Row -->
+            <div class="kpi-grid" id="kpiCards"></div>
+
+            <!-- Trend Charts -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-title">📈 近7天播放趋势</div>
+                    <div class="chart-container"><canvas id="chartViews"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">❤️ 近7天互动趋势</div>
+                    <div class="chart-container"><canvas id="chartEngagement"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Quality Metrics -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-title">🎯 完播率 & 5s完播率 (近7天)</div>
+                    <div class="chart-container"><canvas id="chartCompletion"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">📊 推流指数评估</div>
+                    <div class="chart-container"><canvas id="chartPushIndex"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Recent Videos Table -->
+            <div class="table-card">
+                <div class="table-title">🎬 最近视频表现</div>
+                <table id="videoTable">
+                    <thead>
+                        <tr>
+                            <th>视频标题</th>
+                            <th>平台</th>
+                            <th>播放量</th>
+                            <th>点赞</th>
+                            <th>评论</th>
+                            <th>完播率</th>
+                            <th>推流指数</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="videoTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 2: Cost Tracking -->
+        <div id="tab-cost" class="tab-panel">
+            <!-- Cost Summary -->
+            <div class="cost-summary" id="costSummary"></div>
+
+            <!-- API Cost Breakdown Chart -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-title">📊 本月API费用分布</div>
+                    <div class="chart-container"><canvas id="chartApiCost"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">📈 30天费用趋势</div>
+                    <div class="chart-container"><canvas id="chartCostTrend"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Cost Detail Table -->
+            <div class="table-card">
+                <div class="table-title">💳 API调用明细</div>
+                <table id="costTable">
+                    <thead>
+                        <tr>
+                            <th>服务</th>
+                            <th>调用次数</th>
+                            <th>单价</th>
+                            <th>费用</th>
+                            <th>占比</th>
+                            <th>趋势</th>
+                        </tr>
+                    </thead>
+                    <tbody id="costTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 3: Multi-Platform Overview -->
+        <div id="tab-platform" class="tab-panel">
+            <!-- Platform Comparison Cards -->
+            <div class="platform-compare" id="platformCards"></div>
+
+            <!-- Platform Performance Chart -->
+            <div class="charts-row">
+                <div class="chart-card full">
+                    <div class="chart-title">📊 各平台播放量对比 (近30天)</div>
+                    <div class="chart-container tall"><canvas id="chartPlatformComparison"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Cross-Platform Metrics Table -->
+            <div class="table-card">
+                <div class="table-title">🌐 跨平台核心指标对比</div>
+                <table id="crossPlatformTable">
+                    <thead>
+                        <tr>
+                            <th>指标</th>
+                            <th>抖音</th>
+                            <th>小红书</th>
+                            <th>哔哩哔哩</th>
+                            <th>视频号</th>
+                        </tr>
+                    </thead>
+                    <tbody id="crossPlatformBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 4: Alerts -->
+        <div id="tab-alerts" class="tab-panel">
+            <div class="table-card">
+                <div class="table-title">⚠️ 异常预警与诊断</div>
+                <div class="alert-list" id="alertList"></div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Workflow Editor -->
+        <div id="tab-workflow" class="tab-panel">
+            <div class="table-card">
+                <div class="table-title">🔧 工作流编排器</div>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">
+                    可视化编排工作流，拖拽节点配置执行步骤。
+                </p>
+                <a href="/workflow_editor_demo.html" target="_blank" style="
+                    display: inline-block;
+                    padding: 12px 24px;
+                    background: var(--primary);
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: 500;
+                ">🚀 打开工作流编排器 (新窗口)</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ Tab Switching ============
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`.tab-btn[onclick*="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // ============ Header Clock ============
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('headerDate').textContent = now.toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric',weekday:'short'});
+            document.getElementById('headerTime').textContent = now.toLocaleTimeString('zh-CN');
+        }
+        updateClock();
+        setInterval(updateClock, 10000);
+
+        // ============ Demo Data ============
+        const platforms = ['douyin', 'xiaohongshu', 'bilibili', 'shipinhao'];
+        const platformNames = { douyin: '抖音', xiaohongshu: '小红书', bilibili: '哔哩哔哩', shipinhao: '视频号' };
+        const platformEmojis = { douyin: '🎵', xiaohongshu: '📕', bilibili: '🎬', shipinhao: '💚' };
+        const platformColors = { douyin: '#ff0050', xiaohongshu: '#ff2442', bilibili: '#00a1d6', shipinhao: '#07c160' };
+
+        function genInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function genFloat(min, max, decimals) { return (Math.random() * (max - min) + min).toFixed(decimals); }
+
+        // ============ KPI Cards ============
+        function renderKPICards() {
+            const cards = [
+                { icon: '👁️', label: '总播放量', value: genInt(50000, 200000).toLocaleString(), change: '+' + genFloat(5, 25, 1) + '%', up: true, cls: '' },
+                { icon: '❤️', label: '总点赞', value: genInt(2000, 15000).toLocaleString(), change: '+' + genFloat(3, 18, 1) + '%', up: true, cls: '' },
+                { icon: '💬', label: '总评论', value: genInt(200, 2000).toLocaleString(), change: '+' + genFloat(2, 15, 1) + '%', up: true, cls: '' },
+                { icon: '🔁', label: '总转发', value: genInt(50, 800).toLocaleString(), change: '+' + genFloat(1, 12, 1) + '%', up: true, cls: '' },
+                { icon: '🎯', label: '平均完播率', value: genFloat(25, 45, 1) + '%', change: genFloat(-3, 5, 1) + '%', up: true, cls: '' },
+                { icon: '📈', label: '推流指数', value: genFloat(60, 95, 1), change: genFloat(-2, 8, 1) + '%', up: true, cls: '' },
+            ];
+
+            const metricsByPlatform = {};
+            platforms.forEach(p => {
+                metricsByPlatform[p] = {
+                    views: genInt(5000, 50000).toLocaleString(),
+                    likes: genInt(200, 5000).toLocaleString(),
+                    engagement: genFloat(2, 8, 1) + '%',
+                    completion: genFloat(20, 50, 1) + '%',
+                };
+            });
+
+            // Add platform-specific cards
+            platforms.forEach(p => {
+                cards.push({
+                    icon: platformEmojis[p],
+                    label: platformNames[p] + ' 播放量',
+                    value: metricsByPlatform[p].views,
+                    change: '+' + genFloat(3, 20, 1) + '%',
+                    up: true,
+                    cls: 'platform-' + p,
+                });
+            });
+
+            const container = document.getElementById('kpiCards');
+            container.innerHTML = cards.map(c => `
+                <div class="kpi-card ${c.cls}">
+                    <div class="kpi-card-header">
+                        <span class="kpi-card-icon">${c.icon}</span>
+                        <span class="kpi-card-label">${c.label}</span>
+                    </div>
+                    <div class="kpi-card-value">${c.value}</div>
+                    <div class="kpi-card-change ${c.up ? 'up' : 'down'}">
+                        ${c.up ? '📈' : '📉'} 较昨日 ${c.change}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ============ Charts ============
+        function renderTrendChart(canvasId, label, color, datasets) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                days.push((d.getMonth()+1) + '/' + d.getDate());
+            }
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: datasets.map((ds, i) => ({
+                        label: ds.label,
+                        data: ds.data || Array.from({length:7}, () => genInt(1000, 30000)),
+                        borderColor: ds.color || color,
+                        backgroundColor: ds.color ? ds.color + '20' : color + '20',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    })),
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } },
+                    scales: {
+                        y: { beginAtZero: false, grid: { color: '#f0f0f0' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderDoughnutChart(canvasId, labels, data, colors) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } }
+                }
+            });
+        }
+
+        function renderAllCharts() {
+            // KPI - Views Trend
+            renderTrendChart('chartViews', '#667eea', '#667eea', [
+                { label: '抖音', color: '#ff0050' },
+                { label: '小红书', color: '#ff2442' },
+                { label: '哔哩哔哩', color: '#00a1d6' },
+            ]);
+
+            // KPI - Engagement Trend
+            renderTrendChart('chartEngagement', '#52c41a', '#52c41a', [
+                { label: '点赞', color: '#ff0050' },
+                { label: '评论', color: '#1890ff' },
+                { label: '转发', color: '#52c41a' },
+            ]);
+
+            // KPI - Completion Rates
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                days.push((d.getMonth()+1) + '/' + d.getDate());
+            }
+            new Chart(document.getElementById('chartCompletion').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: days,
+                    datasets: [
+                        { label: '完播率', data: Array.from({length:7}, () => genFloat(25, 45, 1)), backgroundColor: '#667eea', borderRadius: 4 },
+                        { label: '5s完播率', data: Array.from({length:7}, () => genFloat(50, 75, 1)), backgroundColor: '#52c41a', borderRadius: 4 },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+                    scales: {
+                        y: { beginAtZero: false, max: 100, grid: { color: '#f0f0f0' }, ticks: { callback: v => v + '%' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // KPI - Push Index
+            new Chart(document.getElementById('chartPushIndex').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['播放量', '完播率', '互动率', '5s完播', '评论质量', '转发量'],
+                    datasets: [
+                        { label: '今日', data: [genInt(70,95), genInt(60,90), genInt(50,85), genInt(65,90), genInt(40,75), genInt(55,85)], borderColor: '#667eea', backgroundColor: '#667eea20' },
+                        { label: '昨日', data: [genInt(65,90), genInt(55,85), genInt(45,80), genInt(60,85), genInt(35,70), genInt(50,80)], borderColor: '#ccc', backgroundColor: '#ccc20' },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+                    scales: { r: { beginAtZero: false, min: 0, max: 100, ticks: { stepSize: 20 } } }
+                }
+            });
+
+            // Cost - API cost doughnut
+            renderDoughnutChart('chartApiCost',
+                ['Seedance视频生成', 'LLM文案生成', 'edge-tts语音', '火山引擎API', '其他'],
+                [genInt(300, 800), genInt(50, 200), genInt(10, 50), genInt(100, 300), genInt(20, 80)],
+                ['#667eea', '#52c41a', '#faad14', '#ff0050', '#00a1d6']
+            );
+
+            // Cost - 30 day trend
+            renderTrendChart('chartCostTrend', '#faad14', '#faad14', [
+                { label: '每日费用 (¥)', color: '#faad14' },
+            ]);
+
+            // Platform comparison bar chart
+            new Chart(document.getElementById('chartPlatformComparison').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['抖音', '小红书', '哔哩哔哩', '视频号'],
+                    datasets: [
+                        { label: '总播放量', data: [genInt(50000,150000), genInt(20000,80000), genInt(10000,50000), genInt(5000,30000)], backgroundColor: '#667eea', borderRadius: 6 },
+                        { label: '总点赞', data: [genInt(2000,10000), genInt(1000,5000), genInt(500,3000), genInt(200,1500)], backgroundColor: '#52c41a', borderRadius: 6 },
+                        { label: '总评论', data: [genInt(200,1500), genInt(100,800), genInt(50,400), genInt(20,150)], backgroundColor: '#faad14', borderRadius: 6 },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // ============ Video Table ============
+        function renderVideoTable() {
+            const videos = [];
+            for (let i = 0; i < 6; i++) {
+                const p = platforms[i % platforms.length];
+                const views = genInt(1000, 50000);
+                const likes = genInt(50, 5000);
+                const comments = genInt(5, 500);
+                const completion = genFloat(20, 50, 1);
+                const pushIndex = genFloat(40, 95, 1);
+                const isPush = parseFloat(pushIndex) >= 60;
+                videos.push({
+                    title: `${platformNames[p]}_短视频带货_${['产品测评','好物推荐','使用教程','对比评测','限时优惠','种草分享'][i]}`,
+                    platform: platformNames[p],
+                    views: views.toLocaleString(),
+                    likes: likes.toLocaleString(),
+                    comments: comments.toLocaleString(),
+                    completion: completion + '%',
+                    pushIndex: pushIndex,
+                    status: isPush ? '可投流' : '待优化',
+                    statusCls: isPush ? 'success' : 'warning',
+                });
+            }
+
+            document.getElementById('videoTableBody').innerHTML = videos.map(v => `
+                <tr>
+                    <td>${v.title}</td>
+                    <td>${v.platform}</td>
+                    <td>${v.views}</td>
+                    <td>${v.likes}</td>
+                    <td>${v.comments}</td>
+                    <td>${v.completion}</td>
+                    <td>${v.pushIndex}</td>
+                    <td><span class="tag tag-${v.statusCls}">${v.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // ============ Cost Tracking ============
+        function renderCostSummary() {
+            const totalCost = genInt(500, 1500);
+            const remainingBudget = genInt(1000, 3000);
+            const projectedCost = Math.round(totalCost * 1.2);
+
+            document.getElementById('costSummary').innerHTML = `
+                <div class="cost-card">
+                    <div class="cost-card-label">📊 本月总费用</div>
+                    <div class="cost-card-amount">¥${totalCost}</div>
+                    <div class="cost-card-sub">较上月 ${genFloat(-10, 30, 1)}%</div>
+                    <div class="cost-bar"><div class="cost-bar-fill" style="width:${Math.min((totalCost/remainingBudget)*100, 100)}%; background: #667eea;"></div></div>
+                </div>
+                <div class="cost-card">
+                    <div class="cost-card-label">💳 剩余预算</div>
+                    <div class="cost-card-amount">¥${remainingBudget}</div>
+                    <div class="cost-card-sub">预算: ¥3000</div>
+                    <div class="cost-bar"><div class="cost-bar-fill" style="width:${Math.min(((3000-remainingBudget)/3000)*100, 100)}%; background: #52c41a;"></div></div>
+                </div>
+                <div class="cost-card">
+                    <div class="cost-card-label">📈 预估月总费用</div>
+                    <div class="cost-card-amount">¥${projectedCost}</div>
+                    <div class="cost-card-sub">${projectedCost <= 3000 ? '✅ 预算内' : '⚠️ 可能超预算'}</div>
+                    <div class="cost-bar"><div class="cost-bar-fill" style="width:${Math.min((projectedCost/3000)*100, 100)}%; background: ${projectedCost <= 3000 ? '#52c41a' : '#faad14'};"></div></div>
+                </div>
+            `;
+
+            // Cost detail table
+            const services = [
+                { name: 'Seedance 2.0 API', calls: genInt(20, 60), unit: '¥8-15/次', cost: genInt(200, 700), pct: 0 },
+                { name: 'LLM文案生成 (DeepSeek)', calls: genInt(50, 150), unit: '¥0.002/1K token', cost: genInt(20, 100), pct: 0 },
+                { name: 'edge-tts 语音合成', calls: genInt(10, 30), unit: '免费', cost: 0, pct: 0 },
+                { name: '火山引擎API', calls: genInt(30, 80), unit: '¥0.1-1/次', cost: genInt(50, 200), pct: 0 },
+                { name: '其他服务', calls: genInt(5, 20), unit: '-', cost: genInt(10, 50), pct: 0 },
+            ];
+            const total = services.reduce((s, sv) => s + sv.cost, 0);
+            services.forEach(sv => sv.pct = total > 0 ? Math.round(sv.cost / total * 100) : 0);
+
+            document.getElementById('costTableBody').innerHTML = services.map(s => `
+                <tr>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.calls.toLocaleString()} 次</td>
+                    <td>${s.unit}</td>
+                    <td>¥${s.cost}</td>
+                    <td>${s.pct}%</td>
+                    <td>${s.cost > 200 ? '📈' : s.cost === 0 ? '➡️' : '📉'} ${s.cost > 200 ? '偏高' : '正常'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ============ Platform Comparison ============
+        function renderPlatformCards() {
+            document.getElementById('platformCards').innerHTML = platforms.map(p => {
+                const views = genInt(5000, 50000).toLocaleString();
+                const likes = genInt(200, 5000).toLocaleString();
+                const completion = genFloat(25, 50, 1) + '%';
+                const conversion = genFloat(1, 8, 1) + '%';
+                return `
+                    <div class="platform-card">
+                        <div class="platform-card-icon">${platformEmojis[p]}</div>
+                        <div class="platform-card-name" style="color: ${platformColors[p]}">${platformNames[p]}</div>
+                        <div class="platform-metric"><span>播放量</span><span class="platform-metric-val">${views}</span></div>
+                        <div class="platform-metric"><span>点赞</span><span class="platform-metric-val">${likes}</span></div>
+                        <div class="platform-metric"><span>完播率</span><span class="platform-metric-val" style="color:${parseFloat(completion)>35?'#52c41a':'#faad14'}">${completion}</span></div>
+                        <div class="platform-metric"><span>转化率</span><span class="platform-metric-val">${conversion}</span></div>
+                    </div>
+                `;
+            }).join('');
+
+            // Cross-platform table
+            const metrics = [
+                { name: '推送视频数', values: platforms.map(() => genInt(5, 20)) },
+                { name: '总播放量', values: platforms.map(() => genInt(10000, 100000).toLocaleString()) },
+                { name: '互动率', values: platforms.map(() => genFloat(2, 8, 1) + '%') },
+                { name: '平均完播率', values: platforms.map(() => genFloat(25, 50, 1) + '%') },
+                { name: '5s完播率', values: platforms.map(() => genFloat(50, 80, 1) + '%') },
+                { name: '推流指数', values: platforms.map(() => genFloat(50, 95, 1)) },
+                { name: '带货转化率', values: platforms.map(() => genFloat(1, 6, 1) + '%') },
+                { name: '投流ROI', values: platforms.map(() => '1:' + genFloat(1.2, 4.5, 1)) },
+            ];
+
+            document.getElementById('crossPlatformBody').innerHTML = metrics.map(m => `
+                <tr>
+                    <td><strong>${m.name}</strong></td>
+                    ${m.values.map(v => `<td>${v}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+
+        // ============ Alerts ============
+        function renderAlerts() {
+            const alerts = [
+                { type: 'danger', icon: '🔴', title: '抖音2h播放量异常', desc: '视频「产品测评」2小时内播放仅320，低于阈值500。疑似限流。', time: '10分钟前' },
+                { type: 'warning', icon: '🟡', title: '小红书完播率下降', desc: '小红书平均完播率降至22.5%，较昨日下降30%+。建议优化前3秒内容。', time: '30分钟前' },
+                { type: 'danger', icon: '🔴', title: '哔哩哔哩2s跳出率告警', desc: 'B站视频2s跳出率达72%，远超65%阈值。建议重新剪辑开头。', time: '1小时前' },
+                { type: 'info', icon: '🔵', title: 'Seedance API配额预警', desc: '今日API调用已达60次，月配额剩余40%。建议优化调用策略。', time: '2小时前' },
+                { type: 'warning', icon: '🟡', title: '视频号发布失败', desc: '视频号「限时优惠」发布失败，原因：移动端验证超时。需手动重试。', time: '3小时前' },
+            ];
+
+            document.getElementById('alertList').innerHTML = alerts.map(a => `
+                <div class="alert-item ${a.type}">
+                    <span class="alert-icon">${a.icon}</span>
+                    <div class="alert-content">
+                        <div class="alert-title">${a.title}</div>
+                        <div class="alert-desc">${a.desc}</div>
+                    </div>
+                    <span class="alert-time">${a.time}</span>
+                </div>
+            `).join('');
+        }
+
+        // ============ Initialize ============
+        function init() {
+            renderKPICards();
+            renderAllCharts();
+            renderVideoTable();
+            renderCostSummary();
+            renderPlatformCards();
+            renderAlerts();
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

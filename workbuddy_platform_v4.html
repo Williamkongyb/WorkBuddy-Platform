@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy 短视频智能中台 v4.0</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+        }
+        .hero-icon { font-size: 64px; margin-bottom: 16px; }
+        .hero-title { font-size: 36px; font-weight: 700; letter-spacing: 1px; margin-bottom: 8px; }
+        .hero-subtitle { font-size: 16px; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+        .hero-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 4px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px 60px; }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            margin: 40px 0 24px;
+            color: rgba(255,255,255,0.8);
+        }
+        .section-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 16px;
+        }
+
+        /* Service Card */
+        .svc-card {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+        }
+        .svc-card:hover {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.25);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .svc-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            border-radius: 14px 0 0 14px;
+        }
+        .svc-card.primary::after { background: linear-gradient(180deg, #667eea, #764ba2); }
+        .svc-card.success::after { background: linear-gradient(180deg, #52c41a, #73d13d); }
+        .svc-card.warning::after { background: linear-gradient(180deg, #faad14, #ffc53d); }
+        .svc-card.danger::after  { background: linear-gradient(180deg, #ff4d4f, #ff7875); }
+        .svc-card.info::after    { background: linear-gradient(180deg, #1890ff, #40a9ff); }
+
+        .svc-icon { font-size: 36px; flex-shrink: 0; width: 48px; text-align: center; }
+        .svc-body { flex: 1; }
+        .svc-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        .svc-desc { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.6; margin-bottom: 6px; }
+        .svc-meta { font-size: 11px; color: rgba(255,255,255,0.35); display: flex; gap: 12px; flex-wrap: wrap; }
+
+        /* Status Strip */
+        .status-strip {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .status-row { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; font-size: 13px; }
+        .status-item { display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
+        .status-dot.green { background: #52c41a; }
+        .status-dot.yellow { background: #faad14; }
+        .status-dot.red { background: #ff4d4f; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        /* Version Footer */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: rgba(255,255,255,0.25);
+            font-size: 12px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="hero-icon">🤖</div>
+        <div class="hero-title">WorkBuddy 短视频智能中台</div>
+        <div class="hero-subtitle">全自动AI视频生产·多引擎渲染调度·多平台发布·数据监控</div>
+        <div class="hero-badge" style="margin-top:12px;">v4.0 — 统一平台版本</div>
+    </div>
+
+    <div class="container">
+        <!-- Status Strip -->
+        <div class="status-strip">
+            <div class="status-row" id="statusRow">
+                <div class="status-item"><span class="status-dot yellow"></span> 正在检测服务状态...</div>
+            </div>
+        </div>
+
+        <!-- Core Modules -->
+        <div class="section-title">🎯 核心模块</div>
+        <div class="section-grid">
+            <a class="svc-card primary" href="/dashboard_v4.html">
+                <div class="svc-icon">📊</div>
+                <div class="svc-body">
+                    <div class="svc-name">统一运营仪表盘 v4.0</div>
+                    <div class="svc-desc">KPI驾驶舱·成本追踪·多平台总览·引擎状态·异常预警·工作流编排 — 所有功能统一入口</div>
+                    <div class="svc-meta"><span>🆕 全新升级</span><span>API 实时数据</span><span>6个标签页</span></div>
+                </div>
+            </a>
+            <a class="svc-card success" href="/workflow_editor_v2.html">
+                <div class="svc-icon">🔧</div>
+                <div class="svc-body">
+                    <div class="svc-name">工作流编排器 v2.1</div>
+                    <div class="svc-desc">React Flow 可视化拖拽·保存/加载/导出/导入·页面执行模拟·自动保存30s·Ctrl+S快捷键</div>
+                    <div class="svc-meta"><span>🆙 v2.1 拖拽修复</span><span>screenToFlowPosition</span><span>localStorage 持久化</span></div>
+                </div>
+            </a>
+            <a class="svc-card warning" href="/multi_engine_panel.html">
+                <div class="svc-icon">🎮</div>
+                <div class="svc-body">
+                    <div class="svc-name">多引擎渲染面板</div>
+                    <div class="svc-desc">ComfyUI·MoneyPrinter·Remotion·FFmpeg 四引擎统一调度·引擎选择·任务队列·资产展示</div>
+                    <div class="svc-meta"><span>React 18</span><span>CORS 跨域</span><span>React.memo 优化</span></div>
+                </div>
+            </a>
+            <a class="svc-card info" href="/asset_tracker_demo.html">
+                <div class="svc-icon">📁</div>
+                <div class="svc-body">
+                    <div class="svc-name">媒体资产管理器</div>
+                    <div class="svc-desc">MP4视频浏览·缩略图预览·按引擎/平台筛选·纯Python后端·CORS+Range拖动支持</div>
+                    <div class="svc-meta"><span>Flask API :8000</span><span>CORS Enabled</span></div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Backend Services -->
+        <div class="section-title">⚙️ 后端服务</div>
+        <div class="section-grid">
+            <div class="svc-card info" onclick="window.open('http://localhost:8000/','_blank')" style="cursor:pointer">
+                <div class="svc-icon">🎬</div>
+                <div class="svc-body">
+                    <div class="svc-name">AssetTracker API</div>
+                    <div class="svc-desc">端口 8000 · 媒体文件管理·视频缩略图·资产元数据·RESTful API</div>
+                    <div class="svc-meta"><span>Flask v3.1</span><span>Range请求</span><span>/api/assets</span></div>
+                </div>
+            </div>
+            <div class="svc-card primary" onclick="window.open('http://localhost:8300/','_blank')" style="cursor:pointer">
+                <div class="svc-icon">🚀</div>
+                <div class="svc-body">
+                    <div class="svc-name">多引擎渲染调度器</div>
+                    <div class="svc-desc">端口 8300 · 策略模式·ComfyUI/MoneyPrinter/Remotion/FFmpeg·智能降级·统一接口</div>
+                    <div class="svc-meta"><span>Flask v3.1</span><span>Strategy Pattern</span><span>/api/render</span></div>
+                </div>
+            </div>
+            <div class="svc-card success" onclick="window.open('http://localhost:8200/','_blank')" style="cursor:pointer">
+                <div class="svc-icon">🔗</div>
+                <div class="svc-body">
+                    <div class="svc-name">Orchestrator 桥接</div>
+                    <div class="svc-desc">端口 8200 · 读取 pipeline_status.json → HTTP API·流水线阶段·文案/视频计数</div>
+                    <div class="svc-meta"><span>Flask v3.1</span><span>/api/pipeline/summary</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        WorkBuddy 短视频智能中台 v4.0 · 2026-06-07 · 多引擎渲染调度架构 · 统一仪表盘 · 工作流编排器
+    </div>
+
+    <script>
+        // 异步检测服务状态
+        async function checkService(url, name) {
+            try {
+                const resp = await fetch(url, { mode: 'cors' });
+                return { name, ok: resp.ok, url };
+            } catch {
+                return { name, ok: false, url };
+            }
+        }
+
+        async function updateStatus() {
+            const results = await Promise.all([
+                checkService('http://localhost:8000/api/status', 'AssetTracker :8000'),
+                checkService('http://localhost:8200/api/pipeline/summary', 'Orchestrator 桥接 :8200'),
+                checkService('http://localhost:8300/api/status', '多引擎渲染 :8300'),
+                checkService('http://localhost:8080/', 'HTTP 静态服务 :8080'),
+            ]);
+
+            document.getElementById('statusRow').innerHTML = results.map(r =>
+                `<div class="status-item"><span class="status-dot ${r.ok ? 'green' : 'red'}"></span>${r.name}: ${r.ok ? '在线' : '离线'}</div>`
+            ).join('');
+        }
+        updateStatus();
+    </script>
+</body>
+</html>

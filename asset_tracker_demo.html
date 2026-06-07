@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssetTrackerPanel — 媒体资产管理控制台</title>
+    <!-- React 18 + Babel standalone — 通过 CDN 加载 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // ==========================================
+        // 配置：修改此处为台式机地址
+        // ==========================================
+        const API_BASE = 'http://192.168.1.208:8000';
+
+        const PLATFORM_MAP = {
+            douyin:      { label: '抖音',     color: '#ff0050', icon: '🎵' },
+            xiaohongshu: { label: '小红书',   color: '#ff2442', icon: '📕' },
+            bilibili:    { label: '哔哩哔哩', color: '#00a1d6', icon: '🎬' },
+            shipinhao:   { label: '视频号',   color: '#07c160', icon: '💚' },
+            unknown:     { label: '未知',     color: '#999',    icon: '📹' },
+        };
+
+        // ==========================================
+        // API 调用封装（含 CORS 错误友好提示）
+        // ==========================================
+        async function apiFetch(endpoint, options = {}) {
+            const url = `${API_BASE}${endpoint}`;
+            const response = await fetch(url, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...options.headers },
+                credentials: 'omit',
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (endpoint.startsWith('/api/assets/') && !options.headers?.['Range']) {
+                const blob = await response.blob();
+                return URL.createObjectURL(blob);
+            }
+            return response.json();
+        }
+
+        // ==========================================
+        // 自定义 Hook：useApiData
+        // ==========================================
+        function useApiData(endpoint, intervalMs = 0) {
+            const [data, setData] = React.useState(null);
+            const [loading, setLoading] = React.useState(true);
+            const [error, setError] = React.useState(null);
+
+            const fetchData = React.useCallback(async () => {
+                try { setError(null); setData(await apiFetch(endpoint)); }
+                catch (err) { setError(err.message); }
+                finally { setLoading(false); }
+            }, [endpoint]);
+
+            React.useEffect(() => {
+                fetchData();
+                if (intervalMs > 0) { const t = setInterval(fetchData, intervalMs); return () => clearInterval(t); }
+            }, [fetchData, intervalMs]);
+
+            return { data, loading, error, refetch: fetchData };
+        }
+
+        // ==========================================
+        // VideoCard — React.memo 优化
+        // ==========================================
+        const VideoCard = React.memo(function({ asset, onPlay }) {
+            const p = PLATFORM_MAP[asset.platform] || PLATFORM_MAP.unknown;
+            return React.createElement('div', {
+                onClick: () => onPlay(asset),
+                style: {
+                    background:'#fff', borderRadius:'10px', overflow:'hidden',
+                    boxShadow:'0 2px 8px rgba(0,0,0,0.08)', cursor:'pointer',
+                    transition:'transform 0.2s, box-shadow 0.2s',
+                },
+                onMouseEnter: e => { e.currentTarget.style.transform='translateY(-4px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)'; },
+                onMouseLeave: e => { e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'; },
+            },
+                React.createElement('div', { style: {height:'135px',background:'linear-gradient(135deg,#667eea,#764ba2)',display:'flex',alignItems:'center',justifyContent:'center',position:'relative'} },
+                    React.createElement('span', { style:{fontSize:'40px',color:'rgba(255,255,255,0.8)'} }, '▶'),
+                    React.createElement('span', { style:{position:'absolute',top:'8px',right:'8px',color:'white',padding:'2px 8px',borderRadius:'4px',fontSize:'11px',fontWeight:600,background:p.color} }, p.icon + ' ' + p.label),
+                ),
+                React.createElement('div', { style:{padding:'12px'} },
+                    React.createElement('div', { style:{fontSize:'13px',fontWeight:600,color:'#333',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}, title: asset.filename }, asset.filename),
+                    React.createElement('div', { style:{display:'flex',justifyContent:'space-between',fontSize:'11px',color:'#999',marginTop:'6px'} },
+                        React.createElement('span', null, asset.size_mb + ' MB'),
+                        React.createElement('span', null, new Date(asset.created).toLocaleDateString('zh-CN')),
+                    ),
+                ),
+            );
+        });
+
+        // ==========================================
+        // VideoPlayer — 模态播放器
+        // ==========================================
+        function VideoPlayer({ asset, onClose }) {
+            React.useEffect(() => {
+                const h = e => { if (e.key === 'Escape') onClose(); };
+                document.addEventListener('keydown', h);
+                return () => document.removeEventListener('keydown', h);
+            }, [onClose]);
+
+            return React.createElement('div', {
+                onClick: e => { if (e.target === e.currentTarget) onClose(); },
+                style: { position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000 },
+            },
+                React.createElement('div', { style:{background:'#fff',borderRadius:'12px',width:'90%',maxWidth:'900px',maxHeight:'90vh',overflow:'hidden',display:'flex',flexDirection:'column'} },
+                    React.createElement('div', { style:{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 20px',borderBottom:'1px solid #e8e8e8'} },
+                        React.createElement('h3', { style:{fontSize:'15px',margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'} }, asset.filename),
+                        React.createElement('button', { onClick: onClose, style:{background:'none',border:'none',fontSize:'20px',cursor:'pointer',color:'#999'} }, '\u2715'),
+                    ),
+                    React.createElement('video', {
+                        src: `${API_BASE}${asset.url}`,
+                        controls: true, autoPlay: true,
+                        style: { width:'100%',maxHeight:'500px',background:'#000' },
+                        crossOrigin: 'anonymous',
+                    }),
+                    React.createElement('div', { style:{display:'flex',gap:'20px',padding:'12px 20px',fontSize:'12px',color:'#666',borderTop:'1px solid #e8e8e8'} },
+                        React.createElement('span', null, '大小: ' + asset.size_mb + ' MB'),
+                        React.createElement('span', null, '平台: ' + (PLATFORM_MAP[asset.platform] || PLATFORM_MAP.unknown).label),
+                        React.createElement('span', null, '创建: ' + new Date(asset.created).toLocaleString('zh-CN')),
+                    ),
+                ),
+            );
+        }
+
+        // ==========================================
+        // 错误提示
+        // ==========================================
+        function ErrorBanner({ message, onRetry }) {
+            return React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'14px',background:'#fff2e8',border:'1px solid #ffbb96',borderRadius:'8px',padding:'14px 20px',margin:'12px 0'} },
+                React.createElement('span', { style:{fontSize:'28px'} }, '\u26A0\uFE0F'),
+                React.createElement('div', { style:{flex:1} },
+                    React.createElement('div', { style:{fontWeight:600,color:'#ff4d4f',marginBottom:'4px'} }, '连接失败'),
+                    React.createElement('div', { style:{fontSize:'13px',color:'#666'} }, message),
+                    React.createElement('div', { style:{fontSize:'12px',color:'#999',marginTop:'6px'} },
+                        '请确认台式机已启动: ', React.createElement('code', null, 'python asset_server.py'),
+                        React.createElement('br'), '目标地址: ', React.createElement('code', null, API_BASE),
+                    ),
+                ),
+                onRetry && React.createElement('button', { onClick: onRetry, style:{background:'#ff4d4f',color:'white',border:'none',padding:'8px 16px',borderRadius:'6px',cursor:'pointer',fontWeight:500} }, '重试'),
+            );
+        }
+
+        // ==========================================
+        // 任务状态列表
+        // ==========================================
+        function TaskList({ tasks, loading }) {
+            if (loading) return React.createElement('div', { style:{textAlign:'center',padding:40,color:'#999'} }, '加载中...');
+            if (!tasks?.length) return React.createElement('div', { style:{textAlign:'center',padding:60,color:'#999'} }, '暂无任务');
+
+            const cfg = {
+                completed: { label:'已完成', color:'#52c41a', bg:'#f6ffed', icon:'✅' },
+                rendering: { label:'渲染中', color:'#1890ff', bg:'#e6f7ff', icon:'🔄' },
+                queued:    { label:'排队中', color:'#faad14', bg:'#fffbe6', icon:'⏳' },
+            };
+
+            return React.createElement('div', { style:{display:'flex',flexDirection:'column',gap:'10px',maxWidth:'800px'} },
+                tasks.map(task => {
+                    const c = cfg[task.status] || cfg.queued;
+                    const plat = task.platform ? PLATFORM_MAP[task.platform] || PLATFORM_MAP.unknown : null;
+                    return React.createElement('div', { key: task.id, style:{background:'#fff',borderRadius:'8px',padding:'14px 16px',borderLeft:`4px solid ${c.color}`,boxShadow:'0 1px 4px rgba(0,0,0,0.06)'} },
+                        React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'8px',marginBottom:'6px'} },
+                            React.createElement('span', { style:{fontFamily:'monospace',fontSize:'12px',color:'#999'} }, '#' + task.id),
+                            plat && React.createElement('span', { style:{fontSize:'14px',color:plat.color} }, plat.icon),
+                            React.createElement('span', { style:{marginLeft:'auto',padding:'2px 10px',borderRadius:'12px',fontSize:'12px',fontWeight:600,color:c.color,background:c.bg} }, c.icon + ' ' + c.label),
+                        ),
+                        React.createElement('div', { style:{fontSize:'13px',color:'#333',marginBottom:'6px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}, title: task.script_name }, task.script_name),
+                        task.status === 'rendering' && React.createElement('div', { style:{height:'6px',background:'#f0f0f0',borderRadius:'3px',overflow:'hidden',marginBottom:'6px',position:'relative'} },
+                            React.createElement('div', { style:{height:'100%',background:'linear-gradient(90deg,#667eea,#764ba2)',borderRadius:'3px',width:task.progress+'%',transition:'width 0.5s'} }),
+                            React.createElement('span', { style:{position:'absolute',right:'4px',top:'-18px',fontSize:'11px',color:'#667eea',fontWeight:600} }, task.progress + '%'),
+                        ),
+                        React.createElement('div', { style:{fontSize:'11px',color:'#bbb'} }, new Date(task.created).toLocaleString('zh-CN')),
+                    );
+                }),
+            );
+        }
+
+        // ==========================================
+        // AssetTrackerPanel — 主组件
+        // ==========================================
+        function AssetTrackerPanel() {
+            const [tab, setTab] = React.useState('assets');
+            const [playing, setPlaying] = React.useState(null);
+
+            const { data: assetsData, loading: assetsLoading, error: assetsError, refetch: refAssets } = useApiData('/api/assets', 10000);
+            const { data: tasksData, loading: tasksLoading, error: tasksError, refetch: refTasks } = useApiData('/api/tasks', 10000);
+
+            const err = assetsError || tasksError;
+            const retry = () => { refAssets(); refTasks(); };
+
+            return React.createElement('div', { style:{fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif",background:'#f0f2f5',minHeight:'100vh',display:'flex',flexDirection:'column'} },
+
+                // Header
+                React.createElement('div', { style:{background:'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)',color:'white',padding:'14px 24px',display:'flex',justifyContent:'space-between',alignItems:'center'} },
+                    React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'10px'} },
+                        React.createElement('span', { style:{fontSize:'24px'} }, '\uD83C\uDFAC'),
+                        React.createElement('h2', { style:{fontSize:'18px',fontWeight:600,margin:0} }, 'AssetTrackerPanel'),
+                        React.createElement('span', { style:{fontSize:'13px',color:'rgba(255,255,255,0.65)'} }, '媒体资产管理控制台'),
+                    ),
+                    React.createElement('div', { style:{display:'flex',alignItems:'center',gap:'12px',fontSize:'13px'} },
+                        React.createElement('span', { style:{background:'rgba(255,255,255,0.12)',padding:'4px 10px',borderRadius:'4px',fontFamily:'monospace',fontSize:'12px'} }, API_BASE),
+                        React.createElement('button', { onClick: retry, style:{background:'rgba(255,255,255,0.15)',border:'none',color:'white',padding:'6px 14px',borderRadius:'6px',cursor:'pointer',fontSize:'13px'} }, '\uD83D\uDD04 刷新'),
+                    ),
+                ),
+
+                // Tab Bar
+                React.createElement('div', { style:{display:'flex',background:'#fff',borderBottom:'1px solid #e8e8e8',padding:'0 24px'} },
+                    React.createElement('button', {
+                        onClick: () => setTab('assets'),
+                        style: {padding:'14px 20px',border:'none',background:'none',cursor:'pointer',fontSize:'14px',fontWeight:500,color: tab==='assets'?'#667eea':'#666',borderBottom: tab==='assets'?'2px solid #667eea':'2px solid transparent'},
+                    }, '\uD83C\uDF9E\uFE0F 媒体资产 (' + (assetsData?.total ?? '...') + ')'),
+                    React.createElement('button', {
+                        onClick: () => setTab('tasks'),
+                        style: {padding:'14px 20px',border:'none',background:'none',cursor:'pointer',fontSize:'14px',fontWeight:500,color: tab==='tasks'?'#667eea':'#666',borderBottom: tab==='tasks'?'2px solid #667eea':'2px solid transparent'},
+                    }, '\uD83D\uDCCB 任务状态 (' + (tasksData?.total ?? '...') + ')'),
+                ),
+
+                // Content
+                React.createElement('div', { style:{flex:1,padding:'20px 24px',overflowY:'auto'} },
+                    tab === 'assets' ? (
+                        assetsLoading ? React.createElement('div', { style:{textAlign:'center',padding:60,color:'#999'} }, '正在加载媒体资产...') :
+                        assetsError ? React.createElement(ErrorBanner, { message: assetsError, onRetry: retry }) :
+                        !assetsData?.assets?.length ? React.createElement('div', { style:{textAlign:'center',padding:60,color:'#999'} },
+                            React.createElement('div', { style:{fontSize:48} }, '\uD83D\uDCED'),
+                            React.createElement('p', null, '暂无视频文件'),
+                            React.createElement('p', { style:{fontSize:12,color:'#999'} }, '请确认台式机已启动 asset_server.py，且 final_videos 目录中有 .mp4 文件'),
+                        ) :
+                        React.createElement('div', { style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:'16px'} },
+                            assetsData.assets.map(a => React.createElement(VideoCard, { key: a.id, asset: a, onPlay: setPlaying })),
+                        )
+                    ) : (
+                        tasksError ? React.createElement(ErrorBanner, { message: tasksError, onRetry: retry }) :
+                        React.createElement(TaskList, { tasks: tasksData?.tasks, loading: tasksLoading })
+                    ),
+                ),
+
+                // Status Bar
+                React.createElement('div', { style:{display:'flex',justifyContent:'space-between',padding:'8px 24px',background:'#fafafa',borderTop:'1px solid #e8e8e8',fontSize:'12px',color:'#999'} },
+                    React.createElement('span', null, err ? '\uD83D\uDD34 离线' : '\uD83D\uDFE2 在线'),
+                    React.createElement('span', null, '自动刷新: 10秒'),
+                    React.createElement('span', null, new Date().toLocaleTimeString('zh-CN')),
+                ),
+
+                // Player Modal
+                playing && React.createElement(VideoPlayer, { asset: playing, onClose: () => setPlaying(null) }),
+            );
+        }
+
+        // ==========================================
+        // 挂载
+        // ==========================================
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(AssetTrackerPanel));
+    </script>
+</body>
+</html>

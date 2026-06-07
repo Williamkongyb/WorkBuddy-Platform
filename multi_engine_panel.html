@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy - 多引擎渲染调度器 v4.0</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a6fd6;
+            --success: #52c41a;
+            --warning: #faad14;
+            --danger: #ff4d4f;
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #333333;
+            --text-secondary: #888888;
+            --border: #e8e8e8;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+        /* ---- Header ---- */
+        .header { height: 60px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 20px; font-weight: 600; letter-spacing: 0.5px; }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .btn { padding: 7px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-white { background: white; color: var(--primary); } .btn-white:hover { background: #f0f0f0; }
+        .btn-outline { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); } .btn-outline:hover { background: rgba(255,255,255,0.15); }
+        .btn-primary { background: var(--primary); color: white; } .btn-primary:hover { background: var(--primary-dark); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ---- Layout ---- */
+        .layout { display: flex; height: calc(100vh - 60px); }
+
+        /* ---- Sidebar ---- */
+        .sidebar { width: 320px; background: var(--card); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; flex-shrink: 0; }
+        .sidebar h3 { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; margin-top: 20px; }
+        .sidebar h3:first-child { margin-top: 0; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px;
+            font-size: 13px; outline: none; transition: border-color 0.2s; background: #fafafa; color: var(--text);
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(102,126,234,0.12); background: white; }
+        .form-group textarea { resize: vertical; min-height: 70px; }
+
+        /* ---- Engine Cards ---- */
+        .engine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .engine-card {
+            border: 2px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer;
+            transition: all 0.2s; text-align: center;
+        }
+        .engine-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(102,126,234,0.1); }
+        .engine-card.selected { border-color: var(--primary); background: rgba(102,126,234,0.06); }
+        .engine-card-icon { font-size: 24px; margin-bottom: 4px; }
+        .engine-card-name { font-size: 12px; font-weight: 600; color: var(--text); }
+        .engine-card-desc { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+        .engine-card-quality { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; margin-top: 4px; }
+        .quality-high { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .quality-medium { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+        .quality-low { background: #f0f0f0; color: #888; border: 1px solid #d9d9d9; }
+
+        /* ---- Main Content ---- */
+        .main { flex: 1; padding: 20px; overflow-y: auto; }
+        .main h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .main h2 .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--primary); color: white; font-weight: 500; }
+
+        /* ---- Asset Grid ---- */
+        .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        .asset-card {
+            background: var(--card); border-radius: 10px; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 0.25s; cursor: pointer;
+            border: 1px solid var(--border);
+        }
+        .asset-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+        .asset-thumb {
+            width: 100%; aspect-ratio: 9/16; background: #1a1a2e;
+            display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;
+        }
+        .asset-thumb video { width: 100%; height: 100%; object-fit: cover; }
+        .asset-thumb-placeholder { font-size: 48px; opacity: 0.3; }
+        .engine-tag {
+            position: absolute; top: 8px; left: 8px; padding: 2px 8px;
+            border-radius: 4px; font-size: 11px; font-weight: 600;
+            color: white; backdrop-filter: blur(4px);
+        }
+        .tag-comfyui { background: rgba(102,126,234,0.85); }
+        .tag-nanobanana { background: rgba(240,98,146,0.85); }
+        .tag-money { background: rgba(250,173,20,0.85); }
+        .tag-remotion { background: rgba(20,184,166,0.85); }
+        .tag-ffmpeg { background: rgba(140,140,140,0.85); }
+        .platform-tag {
+            position: absolute; top: 8px; right: 8px; padding: 2px 8px;
+            border-radius: 4px; font-size: 11px; font-weight: 500; background: rgba(0,0,0,0.55);
+            color: white; backdrop-filter: blur(4px);
+        }
+        .asset-info { padding: 12px; }
+        .asset-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .asset-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); }
+        .asset-actions { display: flex; gap: 4px; margin-top: 8px; }
+        .asset-actions button { flex: 1; padding: 5px; border: 1px solid var(--border); border-radius: 4px; background: white; cursor: pointer; font-size: 11px; transition: all 0.2s; }
+        .asset-actions button:hover { background: #f5f5f5; }
+        .asset-actions .btn-play:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* ---- Status Bar ---- */
+        .status-bar {
+            position: fixed; bottom: 0; left: 320px; right: 0; height: 40px;
+            background: var(--card); border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
+            font-size: 12px; color: var(--text-secondary); z-index: 100;
+        }
+        .status-indicator { display: flex; align-items: center; gap: 6px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-dot.running { background: var(--warning); animation: pulse 1.5s infinite; }
+        .status-dot.idle { background: var(--success); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        /* ---- Modal ---- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .modal-box { background: var(--card); border-radius: 12px; padding: 28px; min-width: 420px; max-width: 520px; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+        .modal-box h3 { font-size: 17px; font-weight: 600; margin-bottom: 18px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+        /* ---- Progress ---- */
+        .progress-bar { height: 4px; background: #f0f0f0; border-radius: 2px; margin: 12px 0; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #764ba2); border-radius: 2px; transition: width 0.3s; }
+
+        /* ---- Toast ---- */
+        .toast { position: fixed; top: 76px; right: 24px; padding: 10px 20px; border-radius: 8px; font-size: 14px; color: white; z-index: 9999; animation: slideIn 0.3s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.info { background: var(--primary); }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* ---- Video Preview Modal ---- */
+        .video-modal-content { background: #1a1a2e; border-radius: 12px; padding: 0; max-width: 450px; width: 90vw; overflow: hidden; }
+        .video-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; background: rgba(255,255,255,0.05); }
+        .video-modal-header h3 { color: white; font-size: 15px; }
+        .video-modal-close { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 20px; cursor: pointer; padding: 4px; }
+        .video-modal-close:hover { color: white; }
+        .video-container { display: flex; justify-content: center; background: #111; }
+        .video-container video { max-width: 100%; max-height: 70vh; }
+        .video-meta { padding: 16px 20px; background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.7); font-size: 12px; display: flex; gap: 16px; }
+
+        /* ---- Empty State ---- */
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .empty-state-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.3; }
+        .empty-state-text { font-size: 15px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useCallback, useMemo, useRef, useEffect } = React;
+
+        // ==================== 配置 ====================
+        const API_BASE = 'http://localhost:8300'; // 多引擎调度器 API
+        const ASSET_API = 'http://localhost:8000'; // AssetTracker API
+
+        const ENGINE_META = {
+            comfyui:      { name: 'ComfyUI',          icon: '🎨', quality: 'high',   desc: '高质量原创（台式机 GPU）',  color: '#667eea' },
+            nano_banana:  { name: 'Nano Banana',       icon: '🍌', quality: 'high',   desc: 'AI 图片生成（Gemini Flash）', color: '#f06292' },
+            money_printer: { name: 'MoneyPrinter',     icon: '💰', quality: 'medium', desc: '自动流水线中等质量',      color: '#faad14' },
+            remotion:      { name: 'Remotion',          icon: '⚛️', quality: 'medium', desc: 'React 代码化动态排版',    color: '#14b8a6' },
+            ffmpeg:        { name: 'FFmpeg 应急',       icon: '🚨', quality: 'low',    desc: '纯本地保底（无网可用）',  color: '#8c8c8c' },
+        };
+
+        const PLATFORM_META = {
+            douyin:      { label: '抖音',   color: '#ff0050' },
+            xiaohongshu: { label: '小红书', color: '#ff2442' },
+            bilibili:     { label: 'B站',    color: '#00a1d6' },
+            shipinhao:    { label: '视频号', color: '#07c160' },
+        };
+
+        // ==================== CORS 封装 ====================
+        async function apiFetch(endpoint, options = {}) {
+            const url = `${API_BASE}${endpoint}`;
+            const resp = await fetch(url, {
+                ...options,
+                headers: { 'Content-Type': 'application/json', ...options.headers },
+                credentials: 'omit',
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${await resp.text().catch(() => '')}`);
+            return resp.json();
+        }
+
+        async function assetFetch(endpoint) {
+            const resp = await fetch(`${ASSET_API}${endpoint}`, { credentials: 'omit' });
+            if (!resp.ok) throw new Error(`Asset API ${resp.status}`);
+            return resp.json();
+        }
+
+        // ==================== 自定义 Hook ====================
+        function useApi(endpoint, intervalMs = 0) {
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+
+            const fetchData = useCallback(async () => {
+                try {
+                    setError(null);
+                    const d = await apiFetch(endpoint);
+                    setData(d);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            }, [endpoint]);
+
+            useEffect(() => {
+                fetchData();
+                if (intervalMs > 0) { const t = setInterval(fetchData, intervalMs); return () => clearInterval(t); }
+            }, [fetchData, intervalMs]);
+
+            return { data, loading, error, refetch: fetchData };
+        }
+
+        // ==================== AssetCard（React.memo 优化）====================
+        const AssetCard = React.memo(function AssetCard({ asset, onPlay }) {
+            const meta = ENGINE_META[asset.engine] || ENGINE_META['ffmpeg'];
+            const pMeta = PLATFORM_META[asset.platform] || {};
+            const tagClassMap = { comfyui: 'tag-comfyui', nano_banana: 'tag-nanobanana', money_printer: 'tag-money', remotion: 'tag-remotion', ffmpeg: 'tag-ffmpeg' };
+            const tagClass = `engine-tag ${tagClassMap[asset.engine] || 'tag-ffmpeg'}`;
+
+            return (
+                <div className="asset-card" onClick={() => onPlay(asset)}>
+                    <div className="asset-thumb">
+                        {asset.thumbnail_url ? (
+                            <video src={asset.thumbnail_url} muted preload="metadata" onMouseEnter={e => e.target.play().catch(()=>{}) } onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
+                        ) : (
+                            <div className="asset-thumb-placeholder">🎬</div>
+                        )}
+                        <span className={tagClass}>{meta.icon} {meta.name}</span>
+                        {pMeta.label && <span className="platform-tag" style={{ background: pMeta.color + 'cc' }}>{pMeta.label}</span>}
+                    </div>
+                    <div className="asset-info">
+                        <div className="asset-name" title={asset.filename}>{asset.filename}</div>
+                        <div className="asset-meta">
+                            <span>{asset.size_mb ? asset.size_mb + ' MB' : '--'}</span>
+                            <span>{asset.duration_sec ? Math.round(asset.duration_sec) + 's' : '--'}</span>
+                            <span>{asset.created ? new Date(asset.created).toLocaleDateString('zh-CN') : '--'}</span>
+                        </div>
+                        <div className="asset-actions">
+                            <button className="btn-play" onClick={e => { e.stopPropagation(); onPlay(asset); }}>▶ 预览</button>
+                            <button onClick={e => { e.stopPropagation(); window.open(asset.url, '_blank'); }}>⬇ 下载</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        });
+
+        // ==================== 主应用 ====================
+        function App() {
+            // ---- 表单状态 ----
+            const [engineType, setEngineType] = useState('ffmpeg');
+            const [product, setProduct] = useState('');
+            const [platform, setPlatform] = useState('douyin');
+            const [scriptText, setScriptText] = useState('');
+            const [ttsVoice, setTtsVoice] = useState('zh-CN-XiaoxiaoNeural');
+            const [duration, setDuration] = useState(30);
+
+            // ---- 任务/资产状态 ----
+            const [taskQueue, setTaskQueue] = useState([]); // 当前正在执行的任务
+            const [refreshKey, setRefreshKey] = useState(0);
+            const { data: enginesData } = useApi('/api/engines');
+            const { data: assetsData, refetch: refetchAssets } = useApi('/api/assets?_t=' + refreshKey, 5000);
+
+            // ---- UI 状态 ----
+            const [showToast, setShowToast] = useState(null);
+            const [playingAsset, setPlayingAsset] = useState(null); // 预览弹窗
+            const [submitting, setSubmitting] = useState(false);
+
+            const showToastMsg = (msg, type = 'info') => {
+                setShowToast({ msg, type });
+                setTimeout(() => setShowToast(null), 2800);
+            };
+
+            // ---- 提交渲染任务 ----
+            const handleSubmit = async () => {
+                if (!product.trim()) { showToastMsg('请输入产品名称', 'error'); return; }
+                setSubmitting(true);
+                try {
+                    const resp = await apiFetch('/api/render', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            engine_type: engineType,
+                            product: product.trim(),
+                            platform: platform,
+                            script_text: scriptText,
+                            tts_voice: ttsVoice,
+                            duration_target: duration,
+                        }),
+                    });
+                    const task = {
+                        id: resp.task_id,
+                        engine: resp.engine,
+                        product: product.trim(),
+                        platform: platform,
+                        status: 'running',
+                        submitted_at: new Date().toISOString(),
+                    };
+                    setTaskQueue(prev => [...prev, task]);
+                    showToastMsg(`任务已提交（引擎: ${ENGINE_META[resp.engine]?.name || resp.engine}）`, 'info');
+                    pollTask(resp.task_id);
+                } catch (err) {
+                    showToastMsg(`提交失败: ${err.message}`, 'error');
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            // ---- 轮询任务状态 ----
+            const pollTask = (taskId) => {
+                const interval = setInterval(async () => {
+                    try {
+                        const data = await apiFetch(`/api/render/${taskId}`);
+                        if (data.status === 'completed' || data.status === 'failed') {
+                            clearInterval(interval);
+                            setTaskQueue(prev => prev.map(t => t.id === taskId ? { ...t, status: data.status, result: data.result } : t));
+                            if (data.status === 'completed') {
+                                showToastMsg(`✅ 渲染完成（${data.result?.engine || ''}）`, 'success');
+                                setRefreshKey(k => k + 1);
+                            } else {
+                                showToastMsg(`❌ 渲染失败: ${data.result?.error_msg || '未知错误'}`, 'error');
+                            }
+                        }
+                    } catch {
+                        clearInterval(interval);
+                    }
+                }, 3000);
+            };
+
+            // ---- 快捷降级渲染 ----
+            const handleFallbackRender = async () => {
+                if (!product.trim()) { showToastMsg('请输入产品名称', 'error'); return; }
+                setSubmitting(true);
+                try {
+                    const resp = await apiFetch('/api/render/fallback', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            priority: ['comfyui', 'money_printer', 'remotion', 'ffmpeg'],
+                            request: { product: product.trim(), platform, script_text: scriptText, duration_target: duration },
+                        }),
+                    });
+                    showToastMsg(`降级渲染完成: ${resp.engine}`, resp.success ? 'success' : 'error');
+                    if (resp.success) setRefreshKey(k => k + 1);
+                } catch (err) {
+                    showToastMsg(`降级渲染失败: ${err.message}`, 'error');
+                } finally {
+                    setSubmitting(false);
+                }
+            };
+
+            // ---- 预览视频 ----
+            const handlePlay = (asset) => setPlayingAsset(asset);
+
+            const engineOptions = useMemo(() => {
+                if (!enginesData) return Object.keys(ENGINE_META);
+                return (enginesData.engines || []).map(e => e.key);
+            }, [enginesData]);
+
+            const assets = useMemo(() => {
+                if (!assetsData) return [];
+                // 模拟为每个资产附加 engine 标签（实际应由后端返回）
+                return (assetsData.assets || []).map((a, i) => ({
+                    ...a,
+                    engine: a.engine || engineOptions[i % engineOptions.length],
+                }));
+            }, [assetsData, engineOptions]);
+
+            const runningTasks = taskQueue.filter(t => t.status === 'running');
+
+            return (
+                <div>
+                    {/* Header */}
+                    <div className="header">
+                        <h1>🚀 多引擎渲染调度器</h1>
+                        <div className="header-actions">
+                            <span style={{ fontSize: '13px', opacity: 0.85 }}>
+                                {runningTasks.length > 0 ? (
+                                    <span>⏳ {runningTasks.length} 个任务执行中</span>
+                                ) : (
+                                    <span>✓ 就绪</span>
+                                )}
+                            </span>
+                            <button className="btn btn-outline" onClick={() => { setRefreshKey(k => k + 1); refetchAssets(); }}>🔄 刷新</button>
+                        </div>
+                    </div>
+
+                    {/* Layout */}
+                    <div className="layout">
+                        {/* Sidebar */}
+                        <div className="sidebar">
+                            <h3>⚙️ 渲染参数</h3>
+
+                            <div className="form-group">
+                                <label>产品名称 *</label>
+                                <input type="text" placeholder="如：智能水杯" value={product} onChange={e => setProduct(e.target.value)} />
+                            </div>
+
+                            <div className="form-group">
+                                <label>目标平台</label>
+                                <select value={platform} onChange={e => setPlatform(e.target.value)}>
+                                    <option value="douyin">抖音</option>
+                                    <option value="xiaohongshu">小红书</option>
+                                    <option value="bilibili">B站</option>
+                                    <option value="shipinhao">视频号</option>
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>文案内容（留空自动生成）</label>
+                                <textarea placeholder="输入视频配音文案..." value={scriptText} onChange={e => setScriptText(e.target.value)} />
+                            </div>
+
+                            <div className="form-group">
+                                <label>TTS 音色</label>
+                                <select value={ttsVoice} onChange={e => setTtsVoice(e.target.value)}>
+                                    <option value="zh-CN-XiaoxiaoNeural">晓晓（女声，推荐）</option>
+                                    <option value="zh-CN-YunxiNeural">云希（男声）</option>
+                                    <option value="zh-CN-XiaoyiNeural">晓伊（女声）</option>
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>目标时长：{duration} 秒</label>
+                                <input type="range" min="15" max="120" step="5" value={duration} onChange={e => setDuration(parseInt(e.target.value))} style={{ width: '100%' }} />
+                            </div>
+
+                            <h3>🎮 选择渲染引擎</h3>
+                            <div className="engine-grid">
+                                {engineOptions.map(key => {
+                                    const m = ENGINE_META[key] || {};
+                                    const qualityMap = { high: 'quality-high', medium: 'quality-medium', low: 'quality-low' };
+                                    return (
+                                        <div
+                                            key={key}
+                                            className={`engine-card ${engineType === key ? 'selected' : ''}`}
+                                            onClick={() => setEngineType(key)}
+                                        >
+                                            <div className="engine-card-icon">{m.icon || '⚙️'}</div>
+                                            <div className="engine-card-name">{m.name || key}</div>
+                                            <div className="engine-card-desc">{m.desc || ''}</div>
+                                            <span className={`engine-card-quality ${qualityMap[m.quality] || 'quality-low'}`}>
+                                                {'⭐'.repeat(m.quality === 'high' ? 3 : m.quality === 'medium' ? 2 : 1)} {m.quality === 'high' ? '高质量' : m.quality === 'medium' ? '中等' : '轻量'}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                                <button
+                                    className="btn btn-primary"
+                                    onClick={handleSubmit}
+                                    disabled={submitting || !product.trim()}
+                                    style={{ flex: 1 }}
+                                >
+                                    {submitting ? '⏳ 提交中...' : `🚀 使用 ${ENGINE_META[engineType]?.name || engineType} 渲染`}
+                                </button>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                <button className="btn" onClick={handleFallbackRender} disabled={submitting} style={{ flex: 1, background: '#fff7e6', color: '#fa8c16', border: '1px solid #ffd591' }}>
+                                    🛡️ 智能降级（自动切换）
+                                </button>
+                            </div>
+
+                            {/* 任务队列 */}
+                            {taskQueue.length > 0 && (
+                                <>
+                                    <h3>📋 任务队列</h3>
+                                    {taskQueue.slice(-5).reverse().map(t => (
+                                        <div key={t.id} style={{ background: '#f8f9fa', border: '1px solid #e8e8e8', borderRadius: '8px', padding: '10px', marginBottom: '6px', fontSize: '12px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                <span style={{ fontWeight: 600 }}>{ENGINE_META[t.engine]?.icon || '⚙️'} {t.product}</span>
+                                                <span style={{ padding: '1px 6px', borderRadius: '3px', fontSize: '11px', background: t.status === 'running' ? '#e6f7ff' : t.status === 'completed' ? '#f6ffed' : '#fff2e8', color: t.status === 'running' ? '#1890ff' : t.status === 'completed' ? '#52c41a' : '#fa541c' }}>
+                                                    {t.status === 'running' ? '⏳ 执行中' : t.status === 'completed' ? '✅ 完成' : '❌ 失败'}
+                                                </span>
+                                            </div>
+                                            <div style={{ color: '#999', fontSize: '11px' }}>{t.engine} | {PLATFORM_META[t.platform]?.label || t.platform}</div>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="main" style={{ paddingBottom: '60px' }}>
+                            <h2>
+                                媒体资产库
+                                <span className="badge">{assets.length} 个视频</span>
+                                <span style={{ fontSize: '12px', fontWeight: 400, color: '#999', marginLeft: 'auto' }}>
+                                    点击卡片预览 | 标签显示引擎来源
+                                </span>
+                            </h2>
+
+                            {!assetsData ? (
+                                <div className="empty-state"><div className="empty-state-icon">⏳</div><div className="empty-state-text">加载中...</div></div>
+                            ) : assets.length === 0 ? (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">📂</div>
+                                    <div className="empty-state-text">暂无视频资产<br/><span style={{ fontSize: '12px', color: '#bbb' }}>提交渲染任务后，生成的视频将显示在这里</span></div>
+                                </div>
+                            ) : (
+                                <div className="asset-grid">
+                                    {assets.map((asset, i) => (
+                                        <AssetCard key={asset.id || i} asset={asset} onPlay={handlePlay} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Status Bar */}
+                    <div className="status-bar">
+                        <div className="status-indicator">
+                            <span className={`status-dot ${runningTasks.length > 0 ? 'running' : 'idle'}`}></span>
+                            <span>{runningTasks.length > 0 ? `${runningTasks.length} 个任务执行中` : '就绪'}</span>
+                        </div>
+                        <div>
+                            Engine API: {API_BASE} | Asset API: {ASSET_API} | 引擎: {engineOptions.length} 个
+                        </div>
+                    </div>
+
+                    {/* Video Preview Modal */}
+                    {playingAsset && (
+                        <div className="modal-overlay" onClick={() => setPlayingAsset(null)}>
+                            <div className="video-modal-content" onClick={e => e.stopPropagation()}>
+                                <div className="video-modal-header">
+                                    <h3>{playingAsset.filename}</h3>
+                                    <button className="video-modal-close" onClick={() => setPlayingAsset(null)}>✕</button>
+                                </div>
+                                <div className="video-container">
+                                    <video src={playingAsset.url || `${ASSET_API}/api/assets/${playingAsset.filename}`} controls autoPlay style={{ maxWidth: '100%' }} />
+                                </div>
+                                <div className="video-meta">
+                                    <span>引擎: {ENGINE_META[playingAsset.engine]?.name || playingAsset.engine}</span>
+                                    <span>大小: {playingAsset.size_mb ? playingAsset.size_mb + ' MB' : '--'}</span>
+                                    <span>平台: {PLATFORM_META[playingAsset.platform]?.label || '--'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Toast */}
+                    {showToast && (
+                        <div className={`toast ${showToast.type}`}>{showToast.msg}</div>
+                    )}
+                </div>
+            );
+        }
+
+        // ==================== 渲染 ====================
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
