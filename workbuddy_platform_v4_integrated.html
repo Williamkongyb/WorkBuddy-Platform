@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkBuddy 短视频智能中台 v4.0 - 完全整合版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #0f0c29;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Header */
+        .header {
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-logo {
+            font-size: 28px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.green { background: #52c41a; }
+        .status-dot.yellow { background: #faad14; }
+        .status-dot.red { background: #ff4d4f; }
+
+        @keyframes pulse { 
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: rgba(255,255,255,0.03);
+            border-right: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            padding: 16px 12px 8px;
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            color: rgba(255,255,255,0.35);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            padding: 0 8px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            margin-bottom: 2px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255,255,255,0.08);
+            color: white;
+        }
+
+        .sidebar-item.active {
+            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
+            color: white;
+            border-left: 3px solid #667eea;
+        }
+
+        .sidebar-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar-item-text {
+            flex: 1;
+        }
+
+        .sidebar-badge {
+            font-size: 10px;
+            background: rgba(255,255,255,0.15);
+            padding: 2px 6px;
+            border-radius: 8px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-header {
+            padding: 16px 24px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .content-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* iframe Container */
+        .iframe-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .module-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+
+        .module-iframe.active {
+            display: block;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .welcome-icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+        }
+
+        .welcome-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 32px;
+        }
+
+        .welcome-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .welcome-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .welcome-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.2);
+            transform: translateY(-3px);
+        }
+
+        .welcome-card-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .welcome-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .welcome-card-desc {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 8px 24px;
+            background: rgba(255,255,255,0.03);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 11px;
+            color: rgba(255,255,255,0.3);
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Hidden class */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="header-logo">🤖</div>
+            <div class="header-title">WorkBuddy 短视频智能中台</div>
+            <div class="header-badge">v4.0 整合版</div>
+        </div>
+        <div class="header-right">
+            <div class="status-indicator">
+                <span class="status-dot" id="status8000"></span>
+                <span>:8000</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot" id="status8200"></span>
+                <span>:8200</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot" id="status8300"></span>
+                <span>:8300</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-dot" id="status8080"></span>
+                <span>:8080</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">核心功能</div>
+                <div class="sidebar-item active" data-module="dashboard" onclick="switchModule('dashboard')">
+                    <div class="sidebar-icon">📊</div>
+                    <div class="sidebar-item-text">运营仪表盘</div>
+                    <div class="sidebar-badge">v4.0</div>
+                </div>
+                <div class="sidebar-item" data-module="workflow" onclick="switchModule('workflow')">
+                    <div class="sidebar-icon">🔧</div>
+                    <div class="sidebar-item-text">工作流编排</div>
+                    <div class="sidebar-badge">v3.0</div>
+                </div>
+                <div class="sidebar-item" data-module="engine" onclick="switchModule('engine')">
+                    <div class="sidebar-icon">🎮</div>
+                    <div class="sidebar-item-text">多引擎渲染</div>
+                </div>
+                <div class="sidebar-item" data-module="assets" onclick="switchModule('assets')">
+                    <div class="sidebar-icon">📁</div>
+                    <div class="sidebar-item-text">资产管理</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">流水线</div>
+                <div class="sidebar-item" data-module="pipeline-script" onclick="switchModule('pipeline-script')">
+                    <div class="sidebar-icon">✍️</div>
+                    <div class="sidebar-item-text">① 脚本生成</div>
+                </div>
+                <div class="sidebar-item" data-module="pipeline-video" onclick="switchModule('pipeline-video')">
+                    <div class="sidebar-icon">🎬</div>
+                    <div class="sidebar-item-text">② 视频制作</div>
+                </div>
+                <div class="sidebar-item" data-module="pipeline-publish" onclick="switchModule('pipeline-publish')">
+                    <div class="sidebar-icon">🚀</div>
+                    <div class="sidebar-item-text">③ 自动发布</div>
+                </div>
+                <div class="sidebar-item" data-module="pipeline-monitor" onclick="switchModule('pipeline-monitor')">
+                    <div class="sidebar-icon">📈</div>
+                    <div class="sidebar-item-text">④ 数据监控</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">系统</div>
+                <div class="sidebar-item" data-module="services" onclick="switchModule('services')">
+                    <div class="sidebar-icon">⚙️</div>
+                    <div class="sidebar-item-text">服务管理</div>
+                </div>
+                <div class="sidebar-item" data-module="logs" onclick="switchModule('logs')">
+                    <div class="sidebar-icon">📝</div>
+                    <div class="sidebar-item-text">系统日志</div>
+                </div>
+                <div class="sidebar-item" data-module="settings" onclick="switchModule('settings')">
+                    <div class="sidebar-icon">⚡</div>
+                    <div class="sidebar-item-text">系统设置</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Content Header -->
+            <div class="content-header">
+                <div class="content-title" id="contentTitle">运营仪表盘 v4.0</div>
+                <div class="content-actions">
+                    <button class="btn" onclick="refreshCurrentModule()">🔄 刷新</button>
+                    <button class="btn" onclick="openInNewTab()">🔗 新窗口打开</button>
+                    <button class="btn btn-primary" onclick="startFullPipeline()">🚀 启动完整流水线</button>
+                </div>
+            </div>
+
+            <!-- iframe Container -->
+            <div class="iframe-container">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-icon">🤖</div>
+                    <div class="welcome-title">WorkBuddy 短视频智能中台</div>
+                    <div class="welcome-subtitle">全自动AI视频生产 · 多引擎渲染调度 · 多平台发布 · 数据监控</div>
+                    
+                    <div class="welcome-grid">
+                        <div class="welcome-card" onclick="switchModule('dashboard')">
+                            <div class="welcome-card-icon">📊</div>
+                            <div class="welcome-card-title">运营仪表盘</div>
+                            <div class="welcome-card-desc">KPI驾驶舱·成本追踪·多平台总览</div>
+                        </div>
+                        <div class="welcome-card" onclick="switchModule('workflow')">
+                            <div class="welcome-card-icon">🔧</div>
+                            <div class="welcome-card-title">工作流编排</div>
+                            <div class="welcome-card-desc">可视化拖拽·20种节点·贝塞尔曲线</div>
+                        </div>
+                        <div class="welcome-card" onclick="switchModule('engine')">
+                            <div class="welcome-card-icon">🎮</div>
+                            <div class="welcome-card-title">多引擎渲染</div>
+                            <div class="welcome-card-desc">ComfyUI·MoneyPrinter·Remotion·FFmpeg</div>
+                        </div>
+                        <div class="welcome-card" onclick="switchModule('assets')">
+                            <div class="welcome-card-icon">📁</div>
+                            <div class="welcome-card-title">资产管理</div>
+                            <div class="welcome-card-desc">视频浏览·缩略图·筛选</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Module iframes -->
+                <iframe class="module-iframe" id="iframe-dashboard" src="http://localhost:8080/dashboard_v4.html"></iframe>
+                <iframe class="module-iframe" id="iframe-workflow" src="http://localhost:8080/workflow_editor_v3.html"></iframe>
+                <iframe class="module-iframe" id="iframe-engine" src="http://localhost:8080/multi_engine_panel.html"></iframe>
+                <iframe class="module-iframe" id="iframe-assets" src="http://localhost:8080/asset_tracker_demo.html"></iframe>
+                <iframe class="module-iframe" id="iframe-pipeline-script" src="about:blank"></iframe>
+                <iframe class="module-iframe" id="iframe-pipeline-video" src="about:blank"></iframe>
+                <iframe class="module-iframe" id="iframe-pipeline-publish" src="about:blank"></iframe>
+                <iframe class="module-iframe" id="iframe-pipeline-monitor" src="about:blank"></iframe>
+                <iframe class="module-iframe" id="iframe-services" src="about:blank"></iframe>
+                <iframe class="module-iframe" id="iframe-logs" src="about:blank"></iframe>
+                <iframe class="module-iframe" id="iframe-settings" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        WorkBuddy 短视频智能中台 v4.0 · 完全整合版 · 2026-06-07 · 统一运营仪表盘 + 工作流编排器 v3.0 + 多引擎渲染 + 资产管理
+    </div>
+
+    <script>
+        // Module configurations
+        const modules = {
+            'dashboard': {
+                title: '运营仪表盘 v4.0',
+                url: 'http://localhost:8080/dashboard_v4.html',
+                icon: '📊'
+            },
+            'workflow': {
+                title: '工作流编排器 v3.0',
+                url: 'http://localhost:8080/workflow_editor_v3.html',
+                icon: '🔧'
+            },
+            'engine': {
+                title: '多引擎渲染面板',
+                url: 'http://localhost:8080/multi_engine_panel.html',
+                icon: '🎮'
+            },
+            'assets': {
+                title: '媒体资产管理器',
+                url: 'http://localhost:8080/asset_tracker_demo.html',
+                icon: '📁'
+            },
+            'pipeline-script': {
+                title: '① 脚本生成 - 4模块智能文案',
+                url: 'about:blank',
+                icon: '✍️'
+            },
+            'pipeline-video': {
+                title: '② 视频制作 - 剪映/Seedance',
+                url: 'about:blank',
+                icon: '🎬'
+            },
+            'pipeline-publish': {
+                title: '③ 自动发布 - 多平台RPA',
+                url: 'about:blank',
+                icon: '🚀'
+            },
+            'pipeline-monitor': {
+                title: '④ 数据监控 - 推流分析',
+                url: 'about:blank',
+                icon: '📈'
+            },
+            'services': {
+                title: '服务管理',
+                url: 'about:blank',
+                icon: '⚙️'
+            },
+            'logs': {
+                title: '系统日志',
+                url: 'about:blank',
+                icon: '📝'
+            },
+            'settings': {
+                title: '系统设置',
+                url: 'about:blank',
+                icon: '⚡'
+            }
+        };
+
+        let currentModule = null;
+
+        // Switch module
+        function switchModule(moduleId) {
+            // Hide welcome screen
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            
+            // Update sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-module="${moduleId}"]`).classList.add('active');
+            
+            // Update content title
+            const module = modules[moduleId];
+            document.getElementById('contentTitle').textContent = module.title;
+            
+            // Hide all iframes
+            document.querySelectorAll('.module-iframe').forEach(iframe => {
+                iframe.classList.remove('active');
+            });
+            
+            // Show target iframe
+            const targetIframe = document.getElementById(`iframe-${moduleId}`);
+            if (targetIframe) {
+                targetIframe.classList.add('active');
+                
+                // Load URL if not loaded
+                if (targetIframe.src === 'about:blank' && module.url !== 'about:blank') {
+                    targetIframe.src = module.url;
+                }
+            }
+            
+            currentModule = moduleId;
+        }
+
+        // Refresh current module
+        function refreshCurrentModule() {
+            if (currentModule) {
+                const iframe = document.getElementById(`iframe-${currentModule}`);
+                if (iframe) {
+                    iframe.src = iframe.src;
+                }
+            }
+        }
+
+        // Open in new tab
+        function openInNewTab() {
+            if (currentModule) {
+                const module = modules[currentModule];
+                if (module.url !== 'about:blank') {
+                    window.open(module.url, '_blank');
+                }
+            }
+        }
+
+        // Start full pipeline
+        function startFullPipeline() {
+            if (confirm('确认启动完整流水线？\n\n① 脚本生成 → ② 视频制作 → ③ 自动发布 → ④ 数据监控')) {
+                alert('流水线启动功能开发中...\n\n临时方案：请依次执行各阶段脚本：\n1. py 1_generate_script.py\n2. py 2_make_video.py\n3. py 3_auto_publish.py\n4. py data_monitor.py');
+            }
+        }
+
+        // Check service status
+        async function checkService(url, elementId) {
+            try {
+                const resp = await fetch(url, { mode: 'cors' });
+                document.getElementById(elementId).className = 'status-dot ' + (resp.ok ? 'green' : 'red');
+            } catch {
+                document.getElementById(elementId).className = 'status-dot red';
+            }
+        }
+
+        // Update all service status
+        async function updateStatus() {
+            await Promise.all([
+                checkService('http://localhost:8000/api/status', 'status8000'),
+                checkService('http://localhost:8200/api/pipeline/summary', 'status8200'),
+                checkService('http://localhost:8300/api/status', 'status8300'),
+                checkService('http://localhost:8080/', 'status8080')
+            ]);
+        }
+
+        // Initial status check
+        updateStatus();
+        
+        // Periodic status check
+        setInterval(updateStatus, 30000);
+
+        // Auto-load dashboard on start
+        window.addEventListener('load', () => {
+            // Don't auto-load to prevent too many requests
+            // User can click on sidebar to load modules
+        });
+    </script>
+</body>
+</html>
