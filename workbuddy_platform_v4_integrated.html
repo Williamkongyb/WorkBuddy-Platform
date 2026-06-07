@@ -3,13 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WorkBuddy 短视频智能中台 v4.0 - 完全整合版</title>
+    <title>WorkBuddy 短视频智能中台 v4.0 — 完全整合版</title>
     <style>
+        :root {
+            --sidebar-w: 240px;
+            --header-h: 56px;
+            --footer-h: 32px;
+            --accent: #667eea;
+            --accent2: #764ba2;
+            --bg-deep: #0f0c29;
+            --bg-card: rgba(255,255,255,0.05);
+            --border: rgba(255,255,255,0.1);
+            --text-dim: rgba(255,255,255,0.5);
+            --text-bright: rgba(255,255,255,0.85);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            background: #0f0c29;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
             color: white;
             height: 100vh;
             display: flex;
@@ -17,636 +30,686 @@
             overflow: hidden;
         }
 
-        /* Top Header */
-        .header {
-            background: rgba(255,255,255,0.05);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding: 12px 24px;
+        /* ─── Header ─── */
+        #header {
+            height: var(--header-h);
+            background: rgba(15,12,41,0.95);
+            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0 20px;
             flex-shrink: 0;
-            z-index: 100;
+            z-index: 200;
+            backdrop-filter: blur(10px);
         }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
+        .h-left { display:flex; align-items:center; gap:12px; }
+        .h-logo  { font-size:24px; }
+        .h-title { font-size:16px; font-weight:600; letter-spacing:0.5px; }
+        .h-badge { 
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            padding: 2px 10px; border-radius: 10px; font-size: 10px; font-weight: 600;
         }
+        .h-right { display:flex; align-items:center; gap:20px; }
+        .h-status { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); }
+        .h-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+        .h-dot.on  { background:#52c41a; box-shadow:0 0 6px #52c41a; }
+        .h-dot.off { background:#ff4d4f; }
 
-        .header-logo {
-            font-size: 28px;
-        }
-
-        .header-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .header-badge {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            padding: 3px 10px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: rgba(255,255,255,0.6);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .status-dot.green { background: #52c41a; }
-        .status-dot.yellow { background: #faad14; }
-        .status-dot.red { background: #ff4d4f; }
-
-        @keyframes pulse { 
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
-
-        /* Main Layout */
-        .main-layout {
+        /* ─── Body ─── */
+        #body-wrap {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
 
-        /* Sidebar */
-        .sidebar {
-            width: 220px;
-            background: rgba(255,255,255,0.03);
-            border-right: 1px solid rgba(255,255,255,0.08);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
+        /* ─── Sidebar ─── */
+        #sidebar {
+            width: var(--sidebar-w);
+            background: rgba(15,12,41,0.6);
+            border-right: 1px solid var(--border);
             overflow-y: auto;
-        }
-
-        .sidebar-section {
-            padding: 16px 12px 8px;
-        }
-
-        .sidebar-section-title {
-            font-size: 11px;
-            color: rgba(255,255,255,0.35);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-            padding: 0 8px;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            margin-bottom: 2px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            color: rgba(255,255,255,0.7);
-            font-size: 13px;
-            text-decoration: none;
-        }
-
-        .sidebar-item:hover {
-            background: rgba(255,255,255,0.08);
-            color: white;
-        }
-
-        .sidebar-item.active {
-            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
-            color: white;
-            border-left: 3px solid #667eea;
-        }
-
-        .sidebar-icon {
-            font-size: 18px;
-            width: 24px;
-            text-align: center;
             flex-shrink: 0;
+            padding: 6px 0;
         }
-
-        .sidebar-item-text {
-            flex: 1;
+        .s-group { margin-bottom:4px; }
+        .s-group-label {
+            font-size:10px; color:rgba(255,255,255,0.3); text-transform:uppercase;
+            letter-spacing:1.5px; padding:12px 16px 6px;
         }
-
-        .sidebar-badge {
-            font-size: 10px;
-            background: rgba(255,255,255,0.15);
-            padding: 2px 6px;
-            border-radius: 8px;
-            color: rgba(255,255,255,0.5);
-        }
-
-        /* Content Area */
-        .content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .content-header {
-            padding: 16px 24px;
-            background: rgba(255,255,255,0.03);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        .content-title {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .content-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn {
-            padding: 6px 14px;
-            border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.05);
-            color: white;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.3);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
-
-        /* iframe Container */
-        .iframe-container {
-            flex: 1;
+        .s-item {
+            display:flex; align-items:center; gap:10px;
+            padding: 9px 14px; margin: 1px 8px; border-radius: 8px;
+            cursor: pointer; transition: all 0.15s;
+            color: var(--text-dim); font-size:13px; text-decoration:none;
             position: relative;
-            overflow: hidden;
+        }
+        .s-item:hover { background:rgba(255,255,255,0.06); color:white; }
+        .s-item.active {
+            background: linear-gradient(135deg, rgba(102,126,234,0.25), rgba(118,75,162,0.2));
+            color: white;
+        }
+        .s-item.active::before {
+            content:''; position:absolute; left:0; top:20%; height:60%;
+            width:3px; background:var(--accent); border-radius:0 3px 3px 0;
+        }
+        .s-icon { font-size:15px; width:20px; text-align:center; flex-shrink:0; }
+        .s-tag {
+            margin-left:auto; font-size:10px; padding:1px 6px; border-radius:6px;
+            background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.4);
+        }
+        .s-tag.new { background:rgba(102,126,234,0.3); color:#a0b4ff; }
+
+        /* ─── Main Content ─── */
+        #main {
+            flex:1; display:flex; flex-direction:column; overflow:hidden;
         }
 
-        .module-iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: none;
+        /* Breadcrumb */
+        #breadcrumb {
+            padding:10px 20px; font-size:12px; color:var(--text-dim);
+            border-bottom: 1px solid var(--border);
+            display:flex; align-items:center; gap:6px;
+            flex-shrink: 0; background: rgba(255,255,255,0.02);
         }
+        #breadcrumb .sep { color:rgba(255,255,255,0.2); }
+        #cur-title { color:white; font-weight:500; }
+        .b-actions { margin-left:auto; display:flex; gap:6px; }
+        .b-btn {
+            padding:4px 12px; border-radius:5px; border:1px solid rgba(255,255,255,0.2);
+            background:rgba(255,255,255,0.04); color:var(--text-dim); font-size:11px;
+            cursor:pointer; transition:all 0.15s;
+        }
+        .b-btn:hover { background:rgba(255,255,255,0.1); color:white; }
+        .b-btn.primary { background:var(--accent); border:none; color:white; }
 
-        .module-iframe.active {
-            display: block;
+        /* Iframe area */
+        #iframe-area {
+            flex:1; position:relative; overflow:hidden;
         }
+        .mod-iframe {
+            width:100%; height:100%; border:none; display:none;
+        }
+        .mod-iframe.active { display:block; }
 
-        /* Welcome Screen */
-        .welcome-screen {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
+        /* Welcome */
+        #welcome {
+            flex:1; display:flex; flex-direction:column; align-items:center;
+            justify-content:center; padding:40px; text-align:center; overflow-y:auto;
         }
+        .w-icon { font-size:64px; margin-bottom:16px; }
+        .w-title {
+            font-size:22px; font-weight:700; margin-bottom:6px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            background-clip:text;
+        }
+        .w-sub  { font-size:13px; color:var(--text-dim); margin-bottom:28px; }
 
-        .welcome-icon {
-            font-size: 80px;
-            margin-bottom: 24px;
+        /* KPI Strip */
+        .kpi-strip {
+            display:flex; gap:14px; flex-wrap:wrap; justify-content:center;
+            margin-bottom:24px; max-width:900px; width:100%;
         }
+        .kpi-card {
+            flex:1; min-width:160px; max-width:210px;
+            background:rgba(255,255,255,0.04); border:1px solid var(--border);
+            border-radius:12px; padding:16px; text-align:center;
+            cursor:pointer; transition:all 0.2s;
+        }
+        .kpi-card:hover { background:rgba(255,255,255,0.08); transform:translateY(-2px); }
+        .kpi-val { font-size:28px; font-weight:700; color:white; }
+        .kpi-label { font-size:11px; color:var(--text-dim); margin-top:4px; }
 
-        .welcome-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        /* Welcome Grid */
+        .w-grid {
+            display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+            gap:12px; max-width:800px; width:100%;
         }
+        .w-card {
+            background:var(--bg-card); border:1px solid var(--border);
+            border-radius:12px; padding:18px 14px; cursor:pointer;
+            transition:all 0.2s; text-align:center;
+        }
+        .w-card:hover { background:rgba(255,255,255,0.1); transform:translateY(-3px); }
+        .w-card-icon { font-size:30px; margin-bottom:8px; }
+        .w-card-title { font-size:13px; font-weight:600; margin-bottom:3px; }
+        .w-card-desc { font-size:10px; color:var(--text-dim); }
 
-        .welcome-subtitle {
-            font-size: 14px;
-            color: rgba(255,255,255,0.5);
-            margin-bottom: 32px;
+        /* Server Panel (inside iframe) placeholder */
+        #panel-services {
+            flex:1; display:none; flex-direction:column; overflow-y:auto; padding:20px;
         }
-
-        .welcome-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            max-width: 800px;
-            width: 100%;
+        #panel-services.active { display:flex; }
+        .svc-row {
+            display:flex; align-items:center; gap:16px; 
+            padding:16px 20px; margin-bottom:8px;
+            background:rgba(255,255,255,0.04); border:1px solid var(--border);
+            border-radius:12px;
         }
-
-        .welcome-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
+        .svc-row .svc-icon-big { font-size:32px; }
+        .svc-row .svc-info { flex:1; }
+        .svc-row .svc-name { font-size:15px; font-weight:600; }
+        .svc-row .svc-desc { font-size:11px; color:var(--text-dim); }
+        .svc-row .svc-status {
+            padding:4px 12px; border-radius:10px; font-size:11px; font-weight:600;
         }
-
-        .welcome-card:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(255,255,255,0.2);
-            transform: translateY(-3px);
-        }
-
-        .welcome-card-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
-
-        .welcome-card-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .welcome-card-desc {
-            font-size: 11px;
-            color: rgba(255,255,255,0.4);
-        }
+        .svc-status.on  { background:rgba(82,196,26,0.2); color:#52c41a; }
+        .svc-status.off { background:rgba(255,77,79,0.2); color:#ff4d4f; }
+        .svc-actions { display:flex; gap:6px; }
 
         /* Footer */
-        .footer {
-            padding: 8px 24px;
-            background: rgba(255,255,255,0.03);
-            border-top: 1px solid rgba(255,255,255,0.08);
-            font-size: 11px;
-            color: rgba(255,255,255,0.3);
-            text-align: center;
-            flex-shrink: 0;
+        #footer {
+            height:var(--footer-h);
+            background:rgba(15,12,41,0.9);
+            border-top:1px solid var(--border);
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0 16px; font-size:11px; color:rgba(255,255,255,0.25); flex-shrink:0;
         }
 
-        /* Loading Spinner */
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
+        /* Toast */
+        #toast {
+            position:fixed; bottom:50px; left:50%; transform:translateX(-50%);
+            background:rgba(0,0,0,0.85); color:white; padding:10px 24px;
+            border-radius:8px; font-size:13px; pointer-events:none;
+            opacity:0; transition:opacity 0.3s; z-index:9999;
         }
+        #toast.show { opacity:1; }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Hidden class */
-        .hidden { display: none !important; }
+        .hidden { display:none !important; }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="header-left">
-            <div class="header-logo">🤖</div>
-            <div class="header-title">WorkBuddy 短视频智能中台</div>
-            <div class="header-badge">v4.0 整合版</div>
+    <!-- ====== HEADER ====== -->
+    <div id="header">
+        <div class="h-left">
+            <span class="h-logo">🤖</span>
+            <span class="h-title">WorkBuddy 短视频智能中台</span>
+            <span class="h-badge">v4.0 整合版</span>
         </div>
-        <div class="header-right">
-            <div class="status-indicator">
-                <span class="status-dot" id="status8000"></span>
-                <span>:8000</span>
-            </div>
-            <div class="status-indicator">
-                <span class="status-dot" id="status8200"></span>
-                <span>:8200</span>
-            </div>
-            <div class="status-indicator">
-                <span class="status-dot" id="status8300"></span>
-                <span>:8300</span>
-            </div>
-            <div class="status-indicator">
-                <span class="status-dot" id="status8080"></span>
-                <span>:8080</span>
-            </div>
+        <div class="h-right" id="h-status-bar">
+            <div class="h-status"><span class="h-dot off" id="dot-8080"></span>:8080</div>
+            <div class="h-status"><span class="h-dot off" id="dot-8000"></span>:8000</div>
+            <div class="h-status"><span class="h-dot off" id="dot-8200"></span>:8200</div>
+            <div class="h-status"><span class="h-dot off" id="dot-8300"></span>:8300</div>
         </div>
     </div>
 
-    <!-- Main Layout -->
-    <div class="main-layout">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">核心功能</div>
-                <div class="sidebar-item active" data-module="dashboard" onclick="switchModule('dashboard')">
-                    <div class="sidebar-icon">📊</div>
-                    <div class="sidebar-item-text">运营仪表盘</div>
-                    <div class="sidebar-badge">v4.0</div>
+    <!-- ====== BODY ====== -->
+    <div id="body-wrap">
+        <!-- SIDEBAR -->
+        <div id="sidebar">
+            <!-- 一、核心功能 -->
+            <div class="s-group">
+                <div class="s-group-label">📌 核心功能</div>
+                <div class="s-item active" data-m="dashboard" onclick="switchModule('dashboard')">
+                    <span class="s-icon">📊</span>运营仪表盘<span class="s-tag">v4</span>
                 </div>
-                <div class="sidebar-item" data-module="workflow" onclick="switchModule('workflow')">
-                    <div class="sidebar-icon">🔧</div>
-                    <div class="sidebar-item-text">工作流编排</div>
-                    <div class="sidebar-badge">v3.0</div>
+                <div class="s-item" data-m="workflow" onclick="switchModule('workflow')">
+                    <span class="s-icon">🔧</span>工作流编排<span class="s-tag new">v3</span>
                 </div>
-                <div class="sidebar-item" data-module="engine" onclick="switchModule('engine')">
-                    <div class="sidebar-icon">🎮</div>
-                    <div class="sidebar-item-text">多引擎渲染</div>
+                <div class="s-item" data-m="engine" onclick="switchModule('engine')">
+                    <span class="s-icon">🎮</span>多引擎渲染
                 </div>
-                <div class="sidebar-item" data-module="assets" onclick="switchModule('assets')">
-                    <div class="sidebar-icon">📁</div>
-                    <div class="sidebar-item-text">资产管理</div>
+                <div class="s-item" data-m="assets" onclick="switchModule('assets')">
+                    <span class="s-icon">📁</span>资产管理
                 </div>
             </div>
 
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">流水线</div>
-                <div class="sidebar-item" data-module="pipeline-script" onclick="switchModule('pipeline-script')">
-                    <div class="sidebar-icon">✍️</div>
-                    <div class="sidebar-item-text">① 脚本生成</div>
+            <!-- 二、流水线 -->
+            <div class="s-group">
+                <div class="s-group-label">⚡ 生产流水线</div>
+                <div class="s-item" data-m="pipeline-script" onclick="switchModule('pipeline-script')">
+                    <span class="s-icon">①</span>脚本生成
                 </div>
-                <div class="sidebar-item" data-module="pipeline-video" onclick="switchModule('pipeline-video')">
-                    <div class="sidebar-icon">🎬</div>
-                    <div class="sidebar-item-text">② 视频制作</div>
+                <div class="s-item" data-m="pipeline-video" onclick="switchModule('pipeline-video')">
+                    <span class="s-icon">②</span>视频制作
                 </div>
-                <div class="sidebar-item" data-module="pipeline-publish" onclick="switchModule('pipeline-publish')">
-                    <div class="sidebar-icon">🚀</div>
-                    <div class="sidebar-item-text">③ 自动发布</div>
+                <div class="s-item" data-m="pipeline-publish" onclick="switchModule('pipeline-publish')">
+                    <span class="s-icon">③</span>自动发布
                 </div>
-                <div class="sidebar-item" data-module="pipeline-monitor" onclick="switchModule('pipeline-monitor')">
-                    <div class="sidebar-icon">📈</div>
-                    <div class="sidebar-item-text">④ 数据监控</div>
+                <div class="s-item" data-m="pipeline-monitor" onclick="switchModule('pipeline-monitor')">
+                    <span class="s-icon">④</span>数据监控
                 </div>
             </div>
 
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">系统</div>
-                <div class="sidebar-item" data-module="services" onclick="switchModule('services')">
-                    <div class="sidebar-icon">⚙️</div>
-                    <div class="sidebar-item-text">服务管理</div>
+            <!-- 三、后端服务（恢复到中台） -->
+            <div class="s-group">
+                <div class="s-group-label">🔌 后端服务</div>
+                <div class="s-item" data-m="service-8000" onclick="switchModule('service-8000')">
+                    <span class="s-icon">🎬</span>AssetTracker<span class="s-tag">:8000</span>
                 </div>
-                <div class="sidebar-item" data-module="logs" onclick="switchModule('logs')">
-                    <div class="sidebar-icon">📝</div>
-                    <div class="sidebar-item-text">系统日志</div>
+                <div class="s-item" data-m="service-8300" onclick="switchModule('service-8300')">
+                    <span class="s-icon">🚀</span>多引擎调度<span class="s-tag">:8300</span>
                 </div>
-                <div class="sidebar-item" data-module="settings" onclick="switchModule('settings')">
-                    <div class="sidebar-icon">⚡</div>
-                    <div class="sidebar-item-text">系统设置</div>
+                <div class="s-item" data-m="service-8200" onclick="switchModule('service-8200')">
+                    <span class="s-icon">🔗</span>Orchestrator<span class="s-tag">:8200</span>
+                </div>
+            </div>
+
+            <!-- 四、系统 -->
+            <div class="s-group">
+                <div class="s-group-label">⚙️ 系统</div>
+                <div class="s-item" data-m="services" onclick="switchModule('services')">
+                    <span class="s-icon">🖥️</span>服务管理
+                </div>
+                <div class="s-item" data-m="logs" onclick="switchModule('logs')">
+                    <span class="s-icon">📝</span>系统日志
                 </div>
             </div>
         </div>
 
-        <!-- Content Area -->
-        <div class="content">
-            <!-- Content Header -->
-            <div class="content-header">
-                <div class="content-title" id="contentTitle">运营仪表盘 v4.0</div>
-                <div class="content-actions">
-                    <button class="btn" onclick="refreshCurrentModule()">🔄 刷新</button>
-                    <button class="btn" onclick="openInNewTab()">🔗 新窗口打开</button>
-                    <button class="btn btn-primary" onclick="startFullPipeline()">🚀 启动完整流水线</button>
+        <!-- MAIN -->
+        <div id="main">
+            <!-- Breadcrumb -->
+            <div id="breadcrumb">
+                <span>🏠</span><span class="sep">/</span><span id="cur-title">运营仪表盘 v4.0</span>
+                <div class="b-actions">
+                    <button class="b-btn" onclick="refreshModule()">🔄 刷新</button>
+                    <button class="b-btn" onclick="openInNewTab()">🔗 新窗口</button>
                 </div>
             </div>
 
-            <!-- iframe Container -->
-            <div class="iframe-container">
-                <!-- Welcome Screen -->
-                <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-icon">🤖</div>
-                    <div class="welcome-title">WorkBuddy 短视频智能中台</div>
-                    <div class="welcome-subtitle">全自动AI视频生产 · 多引擎渲染调度 · 多平台发布 · 数据监控</div>
-                    
-                    <div class="welcome-grid">
-                        <div class="welcome-card" onclick="switchModule('dashboard')">
-                            <div class="welcome-card-icon">📊</div>
-                            <div class="welcome-card-title">运营仪表盘</div>
-                            <div class="welcome-card-desc">KPI驾驶舱·成本追踪·多平台总览</div>
+            <!-- Iframe Area -->
+            <div id="iframe-area">
+                <!-- Welcome / Home -->
+                <div id="welcome">
+                    <div class="w-icon">🤖</div>
+                    <div class="w-title">WorkBuddy 短视频智能中台</div>
+                    <div class="w-sub">全自动AI视频生产 · 四引擎渲染调度 · 多平台发布 · 数据监控闭环</div>
+
+                    <!-- KPI Strip -->
+                    <div class="kpi-strip">
+                        <div class="kpi-card" onclick="switchModule('dashboard')">
+                            <div class="kpi-val" id="kpi-videos">--</div>
+                            <div class="kpi-label">📹 累计视频</div>
                         </div>
-                        <div class="welcome-card" onclick="switchModule('workflow')">
-                            <div class="welcome-card-icon">🔧</div>
-                            <div class="welcome-card-title">工作流编排</div>
-                            <div class="welcome-card-desc">可视化拖拽·20种节点·贝塞尔曲线</div>
+                        <div class="kpi-card" onclick="switchModule('services')">
+                            <div class="kpi-val" id="kpi-services">--</div>
+                            <div class="kpi-label">🔌 在线服务</div>
                         </div>
-                        <div class="welcome-card" onclick="switchModule('engine')">
-                            <div class="welcome-card-icon">🎮</div>
-                            <div class="welcome-card-title">多引擎渲染</div>
-                            <div class="welcome-card-desc">ComfyUI·MoneyPrinter·Remotion·FFmpeg</div>
+                        <div class="kpi-card" onclick="switchModule('pipeline-monitor')">
+                            <div class="kpi-val" id="kpi-pipeline">--</div>
+                            <div class="kpi-label">📈 推流指数</div>
                         </div>
-                        <div class="welcome-card" onclick="switchModule('assets')">
-                            <div class="welcome-card-icon">📁</div>
-                            <div class="welcome-card-title">资产管理</div>
-                            <div class="welcome-card-desc">视频浏览·缩略图·筛选</div>
+                        <div class="kpi-card" onclick="switchModule('engine')">
+                            <div class="kpi-val" id="kpi-engines">4</div>
+                            <div class="kpi-label">🎮 可用引擎</div>
+                        </div>
+                    </div>
+
+                    <!-- Module Grid -->
+                    <div class="w-grid">
+                        <div class="w-card" onclick="switchModule('dashboard')">
+                            <div class="w-card-icon">📊</div>
+                            <div class="w-card-title">运营仪表盘</div>
+                            <div class="w-card-desc">6标签页·API实时监控·Mock降级</div>
+                        </div>
+                        <div class="w-card" onclick="switchModule('workflow')">
+                            <div class="w-card-icon">🔧</div>
+                            <div class="w-card-title">工作流编排 v3</div>
+                            <div class="w-card-desc">20种节点·贝塞尔曲线·原生JS</div>
+                        </div>
+                        <div class="w-card" onclick="switchModule('engine')">
+                            <div class="w-card-icon">🎮</div>
+                            <div class="w-card-title">多引擎渲染</div>
+                            <div class="w-card-desc">ComfyUI·MoneyPrinter·FFmpeg</div>
+                        </div>
+                        <div class="w-card" onclick="switchModule('assets')">
+                            <div class="w-card-icon">📁</div>
+                            <div class="w-card-title">资产管理</div>
+                            <div class="w-card-desc">视频浏览·缩略图·筛选</div>
+                        </div>
+                        <div class="w-card" onclick="switchModule('service-8000')">
+                            <div class="w-card-icon">🎬</div>
+                            <div class="w-card-title">AssetTracker</div>
+                            <div class="w-card-desc">媒体文件管理 :8000</div>
+                        </div>
+                        <div class="w-card" onclick="switchModule('service-8300')">
+                            <div class="w-card-icon">🚀</div>
+                            <div class="w-card-title">多引擎调度</div>
+                            <div class="w-card-desc">四引擎统一接口 :8300</div>
+                        </div>
+                        <div class="w-card" onclick="switchModule('service-8200')">
+                            <div class="w-card-icon">🔗</div>
+                            <div class="w-card-title">Orchestrator</div>
+                            <div class="w-card-desc">流水线桥接 :8200</div>
+                        </div>
+                        <div class="w-card" onclick="switchModule('services')">
+                            <div class="w-card-icon">🖥️</div>
+                            <div class="w-card-title">服务管理</div>
+                            <div class="w-card-desc">状态监控·启停控制</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Module iframes -->
-                <iframe class="module-iframe" id="iframe-dashboard" src="http://localhost:8080/dashboard_v4.html"></iframe>
-                <iframe class="module-iframe" id="iframe-workflow" src="http://localhost:8080/workflow_editor_v3.html"></iframe>
-                <iframe class="module-iframe" id="iframe-engine" src="http://localhost:8080/multi_engine_panel.html"></iframe>
-                <iframe class="module-iframe" id="iframe-assets" src="http://localhost:8080/asset_tracker_demo.html"></iframe>
-                <iframe class="module-iframe" id="iframe-pipeline-script" src="about:blank"></iframe>
-                <iframe class="module-iframe" id="iframe-pipeline-video" src="about:blank"></iframe>
-                <iframe class="module-iframe" id="iframe-pipeline-publish" src="about:blank"></iframe>
-                <iframe class="module-iframe" id="iframe-pipeline-monitor" src="about:blank"></iframe>
-                <iframe class="module-iframe" id="iframe-services" src="about:blank"></iframe>
-                <iframe class="module-iframe" id="iframe-logs" src="about:blank"></iframe>
-                <iframe class="module-iframe" id="iframe-settings" src="about:blank"></iframe>
+                <iframe class="mod-iframe" id="iframe-dashboard" allow="clipboard-write" loading="lazy"></iframe>
+                <iframe class="mod-iframe" id="iframe-workflow" allow="clipboard-write" loading="lazy"></iframe>
+                <iframe class="mod-iframe" id="iframe-engine" allow="clipboard-write" loading="lazy"></iframe>
+                <iframe class="mod-iframe" id="iframe-assets" allow="clipboard-write" loading="lazy"></iframe>
+
+                <!-- Pipeline placeholders -->
+                <div class="mod-iframe" id="iframe-pipeline-script" style="display:none;padding:40px;overflow-y:auto;flex-direction:column;">
+                    <h2>① 脚本生成 — 4模块智能文案</h2>
+                    <p style="color:rgba(255,255,255,0.5);margin:12px 0 24px;">
+                        痛点引入 → 产品卖点+商品卡片 → 信任背书 → 促单话术<br>
+                        支持抖音/小红书/视频号/哔哩哔哩四平台差异化生成，合规违禁词自动扫描修复。
+                    </p>
+                    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+                        <code style="color:#52c41a;">py 1_generate_script.py --product "产品名" --platform douyin</code>
+                    </div>
+                    <p style="color:var(--text-dim);font-size:12px;">脚本输出路径：D:\WB_Workflow\scripts\</p>
+                    <button class="b-btn primary" style="width:fit-content;margin-top:8px;" onclick="toast('请在工作台终端中执行上述命令')">📋 复制命令</button>
+                </div>
+                <div class="mod-iframe" id="iframe-pipeline-video" style="display:none;padding:40px;overflow-y:auto;flex-direction:column;">
+                    <h2>② 视频制作 — 剪映数字人 / Seedance 2.0</h2>
+                    <p style="color:rgba(255,255,255,0.5);margin:12px 0 24px;">
+                        主引擎：剪映数字人全自动（pyautogui操控）<br>
+                        备选引擎：Seedance 2.0 API + edge-tts口型同步
+                    </p>
+                    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+                        <code style="color:#52c41a;">py 2_make_video.py&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 剪映主引擎</code><br>
+                        <code style="color:#faad14;">py 2_make_video_seedance.py&nbsp;&nbsp;# Seedance备选</code>
+                    </div>
+                    <p style="color:var(--text-dim);font-size:12px;">视频输出路径：D:\WB_Workflow\final_videos\ | 格式：1080p MP4</p>
+                </div>
+                <div class="mod-iframe" id="iframe-pipeline-publish" style="display:none;padding:40px;overflow-y:auto;flex-direction:column;">
+                    <h2>③ 自动发布 — Playwright RPA</h2>
+                    <p style="color:rgba(255,255,255,0.5);margin:12px 0 24px;">
+                        扫描 final_videos/ → 自动登录抖音/小红书/哔哩哔哩创作平台 → 上传视频+填写标题标签 → 10秒安全暂停确认 → 发布<br>
+                        登录态持久化复用，自动截图调试，发布历史防重复。视频号仅限移动端，自动跳过。
+                    </p>
+                    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:16px;">
+                        <code style="color:#52c41a;">py 3_auto_publish.py</code>
+                    </div>
+                </div>
+                <div class="mod-iframe" id="iframe-pipeline-monitor" style="display:none;padding:40px;overflow-y:auto;flex-direction:column;">
+                    <h2>④ 数据监控 — 推流分析+变现闭环</h2>
+                    <p style="color:rgba(255,255,255,0.5);margin:12px 0 24px;">
+                        自动抓取抖音/小红书播放量+点赞+评论 → 推流指数分析 → 投流建议+回复草稿<br>
+                        异常预警：2h播放<500 / 完播率低于均值30% / 2s跳出>65%
+                    </p>
+                    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+                        <code style="color:#52c41a;">py scripts/utils/data_monitor.py&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 数据监控</code><br>
+                        <code style="color:#1890ff;">py scripts/utils/ai_super_employee.py&nbsp;&nbsp;# AI超级员工深度引擎</code>
+                    </div>
+                </div>
+
+                <!-- Service Info Panels -->
+                <div id="panel-services" class="mod-iframe" style="display:none;padding:24px;overflow-y:auto;">
+                    <h2 style="margin-bottom:16px;">🖥️ 服务管理</h2>
+                    <div id="svc-list"></div>
+                </div>
+                <div id="panel-logs" style="display:none;padding:24px;flex-direction:column;overflow-y:auto;">
+                    <h2 style="margin-bottom:16px;">📝 系统日志</h2>
+                    <p style="color:var(--text-dim);">日志功能开发中... 临时查看方式：</p>
+                    <div style="background:rgba(0,0,0,0.3);border-radius:8px;padding:12px;margin-top:8px;">
+                        <code style="color:rgba(255,255,255,0.6);">type D:\WB_Workflow\logs\*.log</code>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        WorkBuddy 短视频智能中台 v4.0 · 完全整合版 · 2026-06-07 · 统一运营仪表盘 + 工作流编排器 v3.0 + 多引擎渲染 + 资产管理
+    <!-- ====== FOOTER ====== -->
+    <div id="footer">
+        <span>WorkBuddy 短视频智能中台 v4.0 · 完全整合版 · 2026-06-07</span>
+        <span id="footer-clock"></span>
     </div>
 
+    <!-- Toast -->
+    <div id="toast"></div>
+
     <script>
-        // Module configurations
-        const modules = {
-            'dashboard': {
-                title: '运营仪表盘 v4.0',
-                url: 'http://localhost:8080/dashboard_v4.html',
-                icon: '📊'
-            },
-            'workflow': {
-                title: '工作流编排器 v3.0',
-                url: 'http://localhost:8080/workflow_editor_v3.html',
-                icon: '🔧'
-            },
-            'engine': {
-                title: '多引擎渲染面板',
-                url: 'http://localhost:8080/multi_engine_panel.html',
-                icon: '🎮'
-            },
-            'assets': {
-                title: '媒体资产管理器',
-                url: 'http://localhost:8080/asset_tracker_demo.html',
-                icon: '📁'
-            },
-            'pipeline-script': {
-                title: '① 脚本生成 - 4模块智能文案',
-                url: 'about:blank',
-                icon: '✍️'
-            },
-            'pipeline-video': {
-                title: '② 视频制作 - 剪映/Seedance',
-                url: 'about:blank',
-                icon: '🎬'
-            },
-            'pipeline-publish': {
-                title: '③ 自动发布 - 多平台RPA',
-                url: 'about:blank',
-                icon: '🚀'
-            },
-            'pipeline-monitor': {
-                title: '④ 数据监控 - 推流分析',
-                url: 'about:blank',
-                icon: '📈'
-            },
-            'services': {
-                title: '服务管理',
-                url: 'about:blank',
-                icon: '⚙️'
-            },
-            'logs': {
-                title: '系统日志',
-                url: 'about:blank',
-                icon: '📝'
-            },
-            'settings': {
-                title: '系统设置',
-                url: 'about:blank',
-                icon: '⚡'
-            }
+        // =============================
+        // Module Registry
+        // =============================
+        const MODULES = {
+            'dashboard':       { title:'运营仪表盘 v4.0',        type:'iframe', url:'http://localhost:8080/dashboard_v4.html' },
+            'workflow':        { title:'工作流编排器 v3.0',      type:'iframe', url:'http://localhost:8080/workflow_editor_v3.html' },
+            'engine':          { title:'多引擎渲染面板',          type:'iframe', url:'http://localhost:8080/multi_engine_panel.html' },
+            'assets':          { title:'媒体资产管理器',          type:'iframe', url:'http://localhost:8080/asset_tracker_demo.html' },
+            'pipeline-script': { title:'① 脚本生成',             type:'inline', id:'iframe-pipeline-script' },
+            'pipeline-video':  { title:'② 视频制作',             type:'inline', id:'iframe-pipeline-video' },
+            'pipeline-publish':{ title:'③ 自动发布',             type:'inline', id:'iframe-pipeline-publish' },
+            'pipeline-monitor':{ title:'④ 数据监控',             type:'inline', id:'iframe-pipeline-monitor' },
+            'service-8000':    { title:'AssetTracker API :8000', type:'inline-svc', port:8000, name:'AssetTracker', desc:'媒体文件管理·视频缩略图·元数据·RESTful API', icon:'🎬', api:'http://localhost:8000/api/status' },
+            'service-8300':    { title:'多引擎渲染调度器 :8300',  type:'inline-svc', port:8300, name:'多引擎渲染调度器', desc:'策略模式·ComfyUI/MoneyPrinter/Remotion/FFmpeg·智能降级', icon:'🚀', api:'http://localhost:8300/api/status' },
+            'service-8200':    { title:'Orchestrator 桥接 :8200', type:'inline-svc', port:8200, name:'Orchestrator 桥接', desc:'读取 pipeline_status.json → HTTP API·流水线阶段·文案/视频计数', icon:'🔗', api:'http://localhost:8200/api/pipeline/summary' },
+            'services':        { title:'服务管理',                type:'panel', id:'panel-services' },
+            'logs':            { title:'系统日志',                type:'panel', id:'panel-logs' },
         };
 
-        let currentModule = null;
+        const BASE = 'http://localhost:8080';
+        let current = null;
 
-        // Switch module
-        function switchModule(moduleId) {
-            // Hide welcome screen
-            document.getElementById('welcomeScreen').classList.add('hidden');
-            
-            // Update sidebar
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.querySelector(`[data-module="${moduleId}"]`).classList.add('active');
-            
-            // Update content title
-            const module = modules[moduleId];
-            document.getElementById('contentTitle').textContent = module.title;
-            
-            // Hide all iframes
-            document.querySelectorAll('.module-iframe').forEach(iframe => {
-                iframe.classList.remove('active');
-            });
-            
-            // Show target iframe
-            const targetIframe = document.getElementById(`iframe-${moduleId}`);
-            if (targetIframe) {
-                targetIframe.classList.add('active');
-                
-                // Load URL if not loaded
-                if (targetIframe.src === 'about:blank' && module.url !== 'about:blank') {
-                    targetIframe.src = module.url;
-                }
+        // =============================
+        // Switch Module
+        // =============================
+        function switchModule(key) {
+            const m = MODULES[key];
+            if (!m) return;
+
+            // Guard: if it's an iframe type, ensure the server is running
+            if (m.type === 'iframe' && !m.url) {
+                toast('⚠️ 模块地址未配置');
+                return;
             }
-            
-            currentModule = moduleId;
-        }
 
-        // Refresh current module
-        function refreshCurrentModule() {
-            if (currentModule) {
-                const iframe = document.getElementById(`iframe-${currentModule}`);
+            // Hide welcome
+            document.getElementById('welcome').classList.add('hidden');
+
+            // Update sidebar active
+            document.querySelectorAll('#sidebar .s-item').forEach(el => el.classList.remove('active'));
+            const sideItem = document.querySelector(`#sidebar .s-item[data-m="${key}"]`);
+            if (sideItem) sideItem.classList.add('active');
+
+            // Update breadcrumb
+            document.getElementById('cur-title').textContent = m.title;
+
+            // Hide all content
+            document.querySelectorAll('.mod-iframe,#panel-services,#panel-logs').forEach(el => {
+                if (el.tagName === 'IFRAME') el.classList.remove('active');
+                else if (el.id && el.id.startsWith('iframe-pipeline-')) {
+                    el.style.display = 'none';
+                    el.classList.remove('active');
+                } else if (el.id === 'panel-services' || el.id === 'panel-logs') {
+                    el.style.display = 'none';
+                    el.classList.remove('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
+            // Show target
+            if (m.type === 'iframe') {
+                const iframe = document.getElementById(`iframe-${key}`);
                 if (iframe) {
-                    iframe.src = iframe.src;
+                    iframe.classList.add('active');
+                    if (iframe.src !== m.url && m.url) {
+                        iframe.src = m.url;
+                    }
+                }
+            } else if (m.type === 'inline') {
+                const el = document.getElementById(m.id);
+                if (el) {
+                    el.style.display = 'flex';
+                    el.classList.add('active');
+                }
+            } else if (m.type === 'inline-svc') {
+                const el = document.getElementById('panel-services');
+                if (el) {
+                    el.style.display = 'block';
+                    el.classList.add('active');
+                    renderServiceDetail(m);
+                }
+            } else if (m.type === 'panel') {
+                const el = document.getElementById(m.id);
+                if (el) {
+                    el.style.display = el.id === 'panel-logs' ? 'flex' : 'block';
+                    el.classList.add('active');
+                    if (m.id === 'panel-services') {
+                        renderAllServices();
+                    }
                 }
             }
+            current = key;
         }
 
-        // Open in new tab
-        function openInNewTab() {
-            if (currentModule) {
-                const module = modules[currentModule];
-                if (module.url !== 'about:blank') {
-                    window.open(module.url, '_blank');
-                }
-            }
+        // =============================
+        // Service Detail Render
+        // =============================
+        function renderServiceDetail(m)     {
+            const list = document.getElementById('svc-list');
+            list.innerHTML = `
+                <div class="svc-row">
+                    <span style="font-size:36px;">${m.icon}</span>
+                    <div class="svc-info">
+                        <div class="svc-name">${m.name}</div>
+                        <div class="svc-desc">${m.desc}</div>
+                        <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.3);">端口 ${m.port} · ${m.api}</div>
+                    </div>
+                    <span class="svc-status" id="svc-detail-status">检测中...</span>
+                </div>
+                <div style="margin-top:16px;">
+                    <button class="b-btn" onclick="window.open('http://localhost:${m.port}/','_blank')">🔗 打开 ${m.name}</button>
+                    <button class="b-btn" onclick="checkServiceStatus(${m.port},'svc-detail-status')">🔄 检测状态</button>
+                </div>
+            `;
+            checkServiceStatus(m.port, 'svc-detail-status');
         }
 
-        // Start full pipeline
-        function startFullPipeline() {
-            if (confirm('确认启动完整流水线？\n\n① 脚本生成 → ② 视频制作 → ③ 自动发布 → ④ 数据监控')) {
-                alert('流水线启动功能开发中...\n\n临时方案：请依次执行各阶段脚本：\n1. py 1_generate_script.py\n2. py 2_make_video.py\n3. py 3_auto_publish.py\n4. py data_monitor.py');
-            }
+        function renderAllServices()     {
+            const services = [
+                { port:8000, name:'AssetTracker API', desc:'媒体文件管理·视频缩略图·元数据', icon:'🎬', api:'http://localhost:8000/api/status' },
+                { port:8300, name:'多引擎渲染调度器', desc:'策略模式·四引擎统一调度', icon:'🚀', api:'http://localhost:8300/api/status' },
+                { port:8200, name:'Orchestrator 桥接', desc:'流水线阶段·文案/视频计数', icon:'🔗', api:'http://localhost:8200/api/pipeline/summary' },
+                { port:8080, name:'HTTP 静态服务', desc:'前端静态资源托管', icon:'🌐', api:'http://localhost:8080/' },
+            ];
+            const list = document.getElementById('svc-list');
+            list.innerHTML = services.map((svc,i) => `
+                <div class="svc-row">
+                    <span style="font-size:32px;">${svc.icon}</span>
+                    <div class="svc-info">
+                        <div class="svc-name">${svc.name}</div>
+                        <div class="svc-desc">${svc.desc} · <code style="color:rgba(255,255,255,0.3);font-size:10px;">${svc.api}</code></div>
+                    </div>
+                    <span class="svc-status" id="svc-status-${svc.port}">检测中...</span>
+                    <div class="svc-actions">
+                        <button class="b-btn" onclick="window.open('http://localhost:${svc.port}/','_blank')">🔗</button>
+                    </div>
+                </div>
+            `).join('');
+            services.forEach(s => checkServiceStatus(s.port, `svc-status-${s.port}`));
         }
 
-        // Check service status
-        async function checkService(url, elementId) {
+        // =============================
+        // Service Status Check
+        // =============================
+        async function checkServiceStatus(port, elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.textContent = '检测中...';
+            el.className = 'svc-status';
             try {
-                const resp = await fetch(url, { mode: 'cors' });
-                document.getElementById(elementId).className = 'status-dot ' + (resp.ok ? 'green' : 'red');
+                const resp = await fetch(`http://localhost:${port}/`, { mode:'cors' });
+                const ok = resp.ok || resp.status < 500;
+                el.textContent = ok ? '运行中' : '异常';
+                el.className = 'svc-status ' + (ok ? 'on' : 'off');
             } catch {
-                document.getElementById(elementId).className = 'status-dot red';
+                el.textContent = '离线';
+                el.className = 'svc-status off';
             }
         }
 
-        // Update all service status
-        async function updateStatus() {
-            await Promise.all([
-                checkService('http://localhost:8000/api/status', 'status8000'),
-                checkService('http://localhost:8200/api/pipeline/summary', 'status8200'),
-                checkService('http://localhost:8300/api/status', 'status8300'),
-                checkService('http://localhost:8080/', 'status8080')
-            ]);
+        async function checkAllServices() {
+            const ports = [8080,8000,8200,8300];
+            for (const port of ports) {
+                const dot = document.getElementById(`dot-${port}`);
+                if (!dot) continue;
+                try {
+                    const resp = await fetch(`http://localhost:${port}/`, { mode:'cors' });
+                    dot.className = 'h-dot ' + ((resp.ok || resp.status < 500) ? 'on' : 'off');
+                } catch {
+                    dot.className = 'h-dot off';
+                }
+            }
+            // Update KPI
+            let onlineCount = 0;
+            document.querySelectorAll('#h-status-bar .h-dot.on').forEach(() => onlineCount++);
+            document.getElementById('kpi-services').textContent = onlineCount + '/4';
         }
 
-        // Initial status check
-        updateStatus();
-        
-        // Periodic status check
-        setInterval(updateStatus, 30000);
+        // =============================
+        // Actions
+        // =============================
+        function refreshModule() {
+            if (!current) return;
+            const m = MODULES[current];
+            if (m.type === 'iframe') {
+                const iframe = document.getElementById(`iframe-${current}`);
+                if (iframe) iframe.src = iframe.src;
+            } else if (m.type === 'inline-svc') {
+                switchModule(current);
+            } else if (m.type === 'panel' && current === 'services') {
+                renderAllServices();
+            }
+            toast('已刷新');
+        }
 
-        // Auto-load dashboard on start
-        window.addEventListener('load', () => {
-            // Don't auto-load to prevent too many requests
-            // User can click on sidebar to load modules
-        });
+        function openInNewTab() {
+            if (!current) return;
+            const m = MODULES[current];
+            if (m.type === 'iframe' && m.url) {
+                window.open(m.url, '_blank');
+            } else if (m.type === 'inline-svc') {
+                window.open(`http://localhost:${m.port}/`, '_blank');
+            }
+        }
+
+        // =============================
+        // Toast
+        // =============================
+        function toast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._tid);
+            t._tid = setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        // =============================
+        // Footer Clock
+        // =============================
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('footer-clock').textContent = 
+                now.toLocaleString('zh-CN', { hour12:false });
+        }
+
+        // =============================
+        // Init
+        // =============================
+        function init() {
+            updateClock();
+            setInterval(updateClock, 30000);
+            checkAllServices();
+            setInterval(checkAllServices, 15000);
+
+            // Attempt to get pipeline stats for KPI
+            fetch('http://localhost:8200/api/pipeline/summary')
+                .then(r => r.json())
+                .then(d => {
+                    if (d.video_count !== undefined) 
+                        document.getElementById('kpi-videos').textContent = d.video_count;
+                })
+                .catch(() => {});
+
+            document.getElementById('kpi-pipeline').textContent = '--';
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
